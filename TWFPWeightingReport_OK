@@ -1,0 +1,167 @@
+class TWFPWeightingReport_OK extends RunBaseBatch
+{
+    StartDate           startDate;
+    EndDate             endDate;
+    ItemId              itemId;
+    DialogField         dlgStartDate,dlgEndDate,dlgItemId,dlgControl,dlgReject,dlgLightWeight;
+    NoYes               Control,Reject, lightWeight;
+    ComExcelDocument_RU document;
+
+      #define.CurrentVersion(1)
+    #localmacro.CurrentList
+    startDate,
+    endDate,
+    itemId
+    #endmacro
+}
+
+public boolean canGoBatch()
+{
+    return false;
+}
+
+public ClassDescription caption()
+{
+    ClassDescription ret;
+
+    ret = "План-факт взвешиваний ГП";
+
+    return ret;
+}
+
+protected Object dialog(DialogRunbase dialog, boolean forceOnClient)
+{
+    DialogRunBase   ret;
+
+    ret = super(dialog, forceOnClient);
+
+    ret.addGroup('Период');
+    dlgStartDate = ret.addFieldValue(typeId(StartDate),startDate);
+    dlgEndDate   = ret.addFieldValue(typeId(EndDate),endDate);
+
+    ret.addGroup('Параметры');
+
+    dlgItemId       = ret.addFieldValue(typeId(ItemId),itemId);
+    dlgControl      = ret.addFieldValue(typeId(NoYes),Control,"Только прошедшие контроль");
+    dlgReject       = ret.addFieldValue(typeId(NoYes),Reject,"Только непрошедшие контроль");
+    dlgLightWeight  = ret.addFieldValue(typeId(NoYes),Reject,"Малый вес");
+
+    return ret;
+}
+
+public boolean getFromDialog()
+{
+    boolean ret;
+    ;
+    ret = super();
+
+    startDate           = dlgStartDate.value();
+    endDate             = dlgEndDate.value();
+    itemId              = dlgItemId.value();
+    control             = dlgControl.value();
+    Reject              = dlgReject.value();
+    lightWeight         = dlgLightWeight.value();
+
+    return ret;
+}
+
+public container pack()
+{
+    return [#CurrentVersion,#CurrentList];
+}
+
+void printSheet1()
+{
+    TWFPWeightingJour_OK    weightingJour;
+    COM                     range;
+    COM                     columns;
+    SysExcelCells           cells;
+    TextBuffer              buf      = new TextBuffer();
+    ;
+    document = new ComExcelDocument_RU();
+    document.newFile("", false);
+    range    = document.findRange_OK("A1:" + ComExcelDocument_RU::numToNameCell(1, 1));
+    columns  = range.entireColumn();
+    columns.NumberFormat("@");
+
+    buf.appendText("Дата взвешивания\t");
+    buf.appendText("Номер взвешивания\t");
+    buf.appendText("Номер паллеты\t");
+    buf.appendText("Номенклатура\t");
+    buf.appendText("Вес плановый\t");
+    buf.appendText("Вес фактический\t");
+    buf.appendText("Допустимое Отклонение + \t");
+    buf.appendText("Допустимое Отклонение - \t");
+    buf.appendText("Фактическое отклонение \n");
+
+    while select   weightingJour
+    order by WeightingDate
+    where  weightingJour.WeightingDate  >= StartDate
+      &&   weightingJour.WeightingDate <= EndDate
+      && (!itemId || weightingJour.ItemId == itemId)
+      && (!Control || (weightingJour.Control ==  NoYes::Yes && !lightWeight  && weightingJour.LightWeight == NoYes::No )
+                   || (weightingJour.Control ==  NoYes::Yes && lightWeight))
+      && (!Reject || weightingJour.Control ==  NoYes::No)
+      && (!lightWeight || (Control && weightingJour.Control ==  NoYes::Yes) || (!Control && weightingJour.LightWeight == NoYes::Yes))
+    {
+
+        buf.appendText(strfmt("%1\t", weightingJour.WeightingDate));
+        buf.appendText(strfmt("%1\t", weightingJour.WeightingID));
+        buf.appendText(strfmt("%1\t", weightingJour.PalletId));
+        buf.appendText(strfmt("%1 %2\t", weightingJour.ItemId, InventTable::find(weightingJour.ItemId).ItemName));
+        buf.appendText(strfmt("%1\t", weightingJour.WeightNettoDoc));
+        buf.appendText(strfmt("%1\t", weightingJour.WeightNetto));
+        buf.appendText(strfmt("%1\t", weightingJour.PlusDeviation));
+        buf.appendText(strfmt("%1\t", weightingJour.MinusDeviation));
+        buf.appendText(strfmt("%1\n", weightingJour.Deviation));
+    }
+
+
+    buf.toClipboard();
+    document.N_Paste(1, 1);
+}
+
+public void run()
+{
+    super();
+
+    this.printSheet1();
+    document.visible(true);
+    document.finalize();
+}
+
+public boolean unpack(container _packedClass)
+{
+    Integer     version     = conPeek(_packedClass,1);
+
+    switch (version)
+    {
+        case #CurrentVersion:
+            [version, #CurrentList] = _packedClass;
+            break;
+        default :
+            return false;
+    }
+
+    return true;
+}
+
+public boolean validate(Object calledFrom)
+{
+    boolean ret;
+
+    ret = super(calledFrom);
+    if (!startDate)
+        throw error("Не указана начальная дата");
+    if (!endDate)
+        throw error("Не указана конечная дата");
+    return ret;
+}
+
+static void main(Args _args)
+{
+    TWFPWeightingReport_OK weightingReport = new TWFPWeightingReport_OK();
+    ;
+    if(weightingReport.prompt())
+        weightingReport.run();
+}
