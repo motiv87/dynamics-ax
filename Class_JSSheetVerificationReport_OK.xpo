@@ -1,0 +1,541 @@
+﻿Exportfile for AOT version 1.0 or later
+Formatversion: 1
+
+***Element: CLS
+
+; Microsoft Dynamics AX Class: JSSheetVerificationReport_OK выгружен
+; --------------------------------------------------------------------------------
+  CLSVERSION 1
+  
+  CLASS #JSSheetVerificationReport_OK
+    PROPERTIES
+      Name                #JSSheetVerificationReport_OK
+      Extends             #RunBaseBatch
+      RunOn               #Called from
+    ENDPROPERTIES
+    
+    METHODS
+      Version: 3
+      SOURCE #canGoBatch
+        #public boolean canGoBatch()
+        #{
+        #    return false;
+        #}
+      ENDSOURCE
+      SOURCE #caption
+        #public ClassDescription caption()
+        #{
+        #    ClassDescription ret;
+        #
+        #    ret = "Сверка времени по сотрудникам";
+        #
+        #    return ret;
+        #}
+      ENDSOURCE
+      SOURCE #classDeclaration
+        #//OK001705 24.08.2011 KKB
+        #class JSSheetVerificationReport_OK extends RunBaseBatch
+        #{
+        #    StartDate                   startDate;
+        #    EndDate                     endDate;
+        #    JSTabNum_OK                 tabNum;
+        #    JSDepartmentId_OK           jsDepartmentId;
+        #    NoYes                       timeMax,prohod;
+        #
+        #    CCADOConnection         connection;
+        #    CCADOCommand            command;
+        #    CCADORecordset          recordSet;
+        #
+        #    DialogField                 dlgStartDate,dlgEndDate,dlgTabNum,dlgDepartmentId,dlgTimeMax,dlgProhod;
+        #
+        #    ComExcelDocument_RU         document;
+        #    int                         curWorkSheetNum;
+        #
+        #    #define.TemplateName("JSSheetVerificationReportTemplate_KKB.xls")
+        #    #define.startPosition(1)
+        #
+        #    #define.CurrentVersion(1)
+        #    #localmacro.CurrentList
+        #    startDate,
+        #    endDate,
+        #    tabNum,
+        #    jsDepartmentId,
+        #    timeMax
+        #    #endmacro
+        #}
+      ENDSOURCE
+      SOURCE #connection
+        #void connection()
+        #{
+        #       ;
+        #       connection = new CCADOConnection();
+        #       connection.connectionString(ExtConnection_OK::find(JSDictionaryExchangeLink_OK::find(JSDictionary_OK::Turngate).ExtConnectionId).getConnectionString());
+        #       connection.connectionTimeout(1000);
+        #       connection.open();
+        #}
+      ENDSOURCE
+      SOURCE #dialog
+        #protected Object dialog(DialogRunbase dialog, boolean forceOnClient)
+        #{
+        #    DialogRunbase ret;
+        #
+        #    ret = super(dialog, forceOnClient);
+        #
+        #    ret.addGroup("Период");
+        #    dlgStartDate = ret.addFieldValue(typeId(StartDate),startDate);
+        #    dlgEndDate = ret.addFieldValue(typeId(EndDate),endDate);
+        #
+        #    ret.addGroup("Параметры");
+        #    dlgTabNum       =   ret.addFieldValue(typeId(JSTabNum_OK),tabNum);
+        #    dlgDepartmentId =   ret.addFieldValue(typeId(JSDepartmentID_OK),jsDepartmentId);
+        #    dlgTimeMax      =   ret.addFieldValue(typeId(NoYes),timeMax,"Показать только с превышением");
+        #    dlgProhod      =   ret.addFieldValue(typeId(NoYes),timeMax,"Показать проходы по человеку");
+        #
+        #    return ret;
+        #}
+      ENDSOURCE
+      SOURCE #endConnection
+        #void endConnection()
+        #{
+        #       ;
+        #       connection.close();
+        #}
+      ENDSOURCE
+      SOURCE #findNotAppearance
+        #str findNotAppearance(JSEmplId_OK  _emplId)
+        #{
+        #    Str     queryText;
+        #    str     NotAppearance;
+        #    ;
+        #
+        #    queryText = "select t2 as NotAppearance from dbo.usvw_neyavki ";
+        #    queryText += "where DT = '" + date2str(startDate,321, 2, 3, 2, 3, 4) +"' ";
+        #    queryText += "and PID = '"+_emplId+"' ";
+        #
+        #    command = new CCADOCommand();
+        #    command.activeConnection(connection);
+        #    command.commandText(queryText);
+        #
+        #    recordSet = command.execute();
+        #
+        #    while(!recordSet.EOF())
+        #    {
+        #        NotAppearance = recordSet.field("NotAppearance").value();
+        #        recordSet.moveNext();
+        #    }
+        #
+        #    return NotAppearance;
+        #}
+      ENDSOURCE
+      SOURCE #findTimeCheckPoint
+        #MapIterator findTimeCheckPoint(MapIterator  _mapIterator)
+        #{
+        #    Str                     queryText;
+        #    str                     emplTab;
+        #
+        #    real                    vrem,vremUhod,vremPrih,time;
+        #    boolean                 isOut,Uhod,Prih;
+        #    Date                    dDate,dateOld;
+        #    counter                 counter = 1;
+        #    Map                     mapWorkHours = new Map(Types::Container,Types::Container);
+        #    container               hours;
+        #    MapIterator             mapIterator;
+        #
+        #    ;
+        #
+        #    [emplTab] = _mapIterator.key();
+        #
+        #    queryText = "select * from prohod ";
+        #    queryText += "where ddate >= '" + date2str(startDate,321, 2, 3, 2, 3, 4) + "' and ddate <= '" + date2str(endDate,321, 2, 3, 2, 3, 4) + "' ";
+        #    queryText += "and SysNum = '"+emplTab+"' ";
+        #    queryText += "order By DDate,vrem asc";
+        #
+        #    command = new CCADOCommand();
+        #    command.activeConnection(connection);
+        #    command.commandText(queryText);
+        #
+        #    recordSet = command.execute();
+        #
+        #    while(!recordSet.EOF())
+        #    {
+        #        vrem    = recordSet.field("Vrem").value();
+        #        isOut    = recordSet.field("Uhod").value();
+        #        dDate   = recordSet.field("Ddate").value();
+        #
+        #        if (dDate == dateOld && uhod && prih)
+        #        {
+        #            counter++;
+        #            hours = conNull();
+        #            uhod = 0;
+        #            prih = 0;
+        #        }
+        #
+        #        if (dDate != dateOld)
+        #        {
+        #            counter = 1;
+        #            hours = conNull();
+        #            uhod = 0;
+        #            prih = 0;
+        #        }
+        #
+        #        dateOld = dDate;
+        #
+        #        if (!isOut)
+        #        {
+        #            Prih = true;
+        #            hours = conIns(hours,1,vrem);
+        #            mapWorkHours.insert([emplTab,dDate,counter],hours);
+        #            recordSet.moveNext();
+        #            continue;
+        #        }
+        #        else
+        #        {
+        #            Uhod = isOut;
+        #            if (conLen(hours))
+        #            {
+        #                hours = conIns(hours,2,vrem);
+        #                mapWorkHours.insert([emplTab,dDate,counter],hours);
+        #            }
+        #            else
+        #            {
+        #                hours = [0,vrem];
+        #                mapWorkHours.insert([emplTab,dDate,counter],hours);
+        #                hours = conNull();
+        #                Uhod = false;
+        #                counter++;
+        #            }
+        #            recordSet.moveNext();
+        #            continue;
+        #        }
+        #
+        #    }
+        #    mapIterator = new mapIterator(mapWorkHours);
+        #    return mapIterator;
+        #}
+      ENDSOURCE
+      SOURCE #getEndDate
+        #EndDate getEndDate(endDate    _endDate = endDate)
+        #{
+        #    ;
+        #    endDate = _endDate;
+        #
+        #    return endDate;
+        #}
+      ENDSOURCE
+      SOURCE #getFromDialog
+        #public boolean getFromDialog()
+        #{
+        #    boolean ret;
+        #    ;
+        #    ret = super();
+        #
+        #    startDate               = dlgStartDate.value();
+        #    endDate                 = dlgEndDate.value();
+        #    tabNum                  = dlgTabNum.value();
+        #    jsDepartmentId          = dlgDepartmentId.value();
+        #    timeMax                 = dlgTimeMax.value();
+        #    prohod                  = dlgProhod.value();
+        #
+        #    return ret;
+        #}
+      ENDSOURCE
+      SOURCE #getStartDate
+        #startDate getStartDate(startDate    _startDate = startDate)
+        #{
+        #    ;
+        #    startDate = _startDate;
+        #
+        #    return startDate;
+        #}
+      ENDSOURCE
+      SOURCE #makeDocument
+        #private boolean makeDocument()
+        #{
+        #    ;
+        #    document = new ComExcelDocument_RU();
+        #
+        #    if (!document.newFile(templateFolderJOBSHEET_OK() + #TemplateName, false))
+        #        return checkFailed(strfmt("@SYS60367", templateFolderJOBSHEET_OK() + #TemplateName));
+        #
+        #    return true;
+        #}
+      ENDSOURCE
+      SOURCE #pack
+        #public container pack()
+        #{
+        #    return [#CurrentVersion,#CurrentList];
+        #}
+      ENDSOURCE
+      SOURCE #printSheet1
+        #void printSheet1()
+        #{
+        #    JSEmpl_OK               empl = JSEmpl_OK::findByTabNum(tabNum,endDate);
+        #    JSTimeTrans_OK          timeTrans;
+        #    JSJournalTable_OK       journalTable;
+        #    WrkCtrTable             wrkCtrTable;
+        #
+        #    JSJournalId_OK          journalId;
+        #
+        #    Map                     mapTime = new Map(Types::Container,Types::String);
+        #    MapIterator             mapIterator,timeCheckIterator;
+        #
+        #    str                     emplTab,emplDate,emplId;
+        #    int                     i;
+        #    real                    timeCheckPoint,Time,vremUhod,vremPrih;
+        #
+        #    #define.CopyRaw(6)
+        #    #define.CopyRawTo(6)
+        #    #define.LinesInTemplate(1)
+        #    #define.StarDate("StartDate")
+        #    #define.EndDate("EndDate")
+        #    #define.Department("Deparment")
+        #    ;
+        #
+        #
+        #
+        #    document.insertValue(#Department,JSDepartmentTable_OK::find(jsDepartmentId).Name,curWorkSheetNum);
+        #    document.insertValue(#StarDate,startDate,curWorkSheetNum);
+        #    document.insertValue(#EndDate,endDate,curWorkSheetNum);
+        #
+        #    select * from wrkCtrTable
+        #        where  wrkCtrTable.IsGroup
+        #             && (wrkCtrTable.JSDepartmentId_OK
+        #             && wrkCtrTable.JSDepartmentId_OK == jsDepartmentId);
+        #
+        #
+        #    while select TabNum,JSEmplId,sum(WorkHours) from timeTrans
+        #      group by TabNum,JSEmplId
+        #        where   (!tabNum
+        #                || timeTrans.TabNum == tabNum)
+        #       join journalTable
+        #           order by startDate ASC
+        #            where  journalTable.StartDate >= startDate
+        #                && journalTable.StartDate <= endDate
+        #                && ((!jsDepartmentId || journalTable.DepartmentId == jsDepartmentId)
+        #                || (wrkCtrTable.WrkCtrGroupId && journalTable.WrkCtrGroupId == wrkCtrTable.WrkCtrGroupId))
+        #                && timeTrans.JournalId == journalTable.JournalId
+        #    {
+        #        mapTime.insert([timeTrans.TabNum,timeTrans.JSEmplId],timeTrans.WorkHours);
+        #    }
+        #
+        #    this.connection();
+        #
+        #    startLengthyOperation();
+        #    this.progressInit("Сбор данных",mapTime.elements(),#AviSearch);
+        #
+        #    mapIterator = new MapIterator(mapTime);
+        #    while(mapIterator.more())
+        #    {
+        #        [emplTab,emplId] = mapIterator.key();
+        #
+        #        empl = JSEmpl_OK::find(emplId);
+        #
+        #        time = str2Num(mapIterator.value());
+        #
+        #        timeCheckIterator = this.findTimeCheckPoint(mapIterator);
+        #        while (timeCheckIterator.more())
+        #        {
+        #            [vremPrih,vremUhod] = timeCheckIterator.value();
+        #
+        #            if(vremUhod)
+        #                timeCheckPoint+= vremUhod - vremPrih;
+        #            else
+        #                timeCheckPoint+= 1440 - vremPrih;
+        #
+        #            timeCheckIterator.next();
+        #        }
+        #
+        #        timeCheckPoint = timeCheckPoint/60;
+        #
+        #        if (timeMax && time < timeCheckPoint )
+        #        {
+        #            mapIterator.next();
+        #            continue;
+        #        }
+        #
+        #        if (time == 0 && timeCheckPoint == 0)
+        #        {
+        #            mapIterator.next();
+        #            continue;
+        #        }
+        #
+        #        progress.incCount();
+        #        progress.setText(empl.Name);
+        #
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(1, #CopyRaw + i), empl.Name, curWorkSheetNum);
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(2, #CopyRaw + i), empl.TabNum, curWorkSheetNum);
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(3, #CopyRaw + i), emplDate, curWorkSheetNum);
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(4, #CopyRaw + i), time, curWorkSheetNum);
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(5, #CopyRaw + i), timeCheckPoint, curWorkSheetNum);
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(6, #CopyRaw + i), timeCheckPoint - time , curWorkSheetNum);
+        #
+        #        document.insertRows(#CopyRaw+i, #CopyRawTo + i, curWorkSheetNum, 1,1, curWorkSheetNum);
+        #        i++;
+        #
+        #        mapIterator.next();
+        #    }
+        #    document.deleteRow(#CopyRawTo + i - 1,curWorkSheetNum);
+        #
+        #    endLengthyOperation();
+        #}
+      ENDSOURCE
+      SOURCE #printSheet2
+        #void printSheet2()
+        #{
+        #    JSEmpl_OK               empl = JSEmpl_OK::findByTabNum(tabNum,endDate);
+        #    Map                     mapTime = new Map(Types::Container,Types::String);
+        #    MapIterator             mapIterator,timeCheckIterator;
+        #    real                    vremUhod,vremPrih,timeCheckPoint;
+        #    int                     i;
+        #    StartDate               dateProhod;
+        #    UTCDateTime             inTime, outTime,time;
+        #
+        #    #define.CopyRaw(6)
+        #    #define.CopyRawTo(6)
+        #    #define.LinesInTemplate(1)
+        #    #define.StarDate("DateStart")
+        #    #define.EndDate("DateEnd")
+        #    #define.Name("Name")
+        #    #define.AdminGroup("Admin-")
+        #    ;
+        #/*   if (!isUserInGroup(#AdminGroup) && JSEmplMove_OK::find(empl.JSEmplId,endDate).ExpensesCategory >= JSExpensesCategory_OK::Specialists)
+        #   {
+        #       throw error("Посмотреть прохроды по специалистам может только администратор системы");
+        #    }
+        #*/
+        #    if (!empl)
+        #        throw error("Сотрудник не найден");
+        #//+Nab 23.11.2020 Доработка для Коломны
+        # //   document.insertValue(#Name,empl.Name,curWorkSheetNum);
+        #    document.insertValue(#Name,empl.Name + ' Таб. № ' + tabNum,curWorkSheetNum);
+        #//-Nab 23.11.2020 Доработка для Коломны
+        #    document.insertValue(#StarDate,startDate,curWorkSheetNum);
+        #    document.insertValue(#EndDate,endDate,curWorkSheetNum);
+        #
+        #    mapTime.insert([empl.TabNum,empl.JSEmplId],0);
+        #
+        #    this.connection();
+        #
+        #    mapIterator = new MapIterator(mapTime);
+        #    while(mapIterator.more())
+        #    {
+        #        timeCheckIterator = this.findTimeCheckPoint(mapIterator);
+        #        while (timeCheckIterator.more())
+        #        {
+        #
+        #            [tabNum,DateProhod]          = timeCheckIterator.key();
+        #            [vremPrih,vremUhod] = timeCheckIterator.value();
+        #
+        #            if(vremUhod)
+        #                timeCheckPoint = vremUhod - vremPrih;
+        #            else
+        #                timeCheckPoint = 1440 - vremPrih;
+        #
+        #            time = DateTimeUtil::newDateTime(DateProhod, 0);
+        #            time = DateTimeUtil::addMinutes(time, timeCheckPoint);
+        #
+        #            outTime = DateTimeUtil::newDateTime(DateProhod, 0);
+        #            outTime = DateTimeUtil::addMinutes(outTime, vremUhod);
+        #
+        #            inTime = DateTimeUtil::newDateTime(DateProhod, 0);
+        #            inTime = DateTimeUtil::addMinutes(inTime, vremPrih);
+        #
+        #            document.insertValue(COMExcelDocument_RU::numToNameCell(1, #CopyRaw + i), DateProhod, curWorkSheetNum);
+        #            document.insertValue(COMExcelDocument_RU::numToNameCell(3, #CopyRaw + i), strfmt("%1:%2",DateTimeUtil::hour(inTime),DateTimeUtil::minute(inTime)), curWorkSheetNum);
+        #            document.insertValue(COMExcelDocument_RU::numToNameCell(4, #CopyRaw + i), strfmt("%1:%2",DateTimeUtil::hour(outTime),DateTimeUtil::minute(outTime)), curWorkSheetNum);
+        #            document.insertValue(COMExcelDocument_RU::numToNameCell(5, #CopyRaw + i), strfmt("%1:%2",DateTimeUtil::hour(time),DateTimeUtil::minute(time)) , curWorkSheetNum);
+        #
+        #            document.insertRows(#CopyRaw+i, #CopyRawTo + i, curWorkSheetNum, 1,1, curWorkSheetNum);
+        #            i++;
+        #
+        #            timeCheckIterator.next();
+        #        }
+        #
+        #        mapIterator.next();
+        #    }
+        #    document.deleteRow(#CopyRawTo + i - 1,curWorkSheetNum);
+        #}
+      ENDSOURCE
+      SOURCE #run
+        ##define.Worksheet1(1)
+        ##define.Worksheet2(2)
+        #public void run()
+        #{
+        #    super();
+        #
+        #    if (this.makeDocument())
+        #    {
+        #
+        #
+        #        connection = new CCADOConnection();
+        #        connection.connectionString(ExtConnection_OK::find(JSDictionaryExchangeLink_OK::find(JSDictionary_OK::Turngate).ExtConnectionId).getConnectionString());
+        #        connection.open();
+        #
+        #        if (!prohod)
+        #        {
+        #            curWorkSheetNum = #Worksheet1;
+        #            this.printSheet1();
+        #        }
+        #        else
+        #        {
+        #            curWorkSheetNum = #Worksheet2;
+        #            this.printSheet2();
+        #        }
+        #    }
+        #    document.visible(true);
+        #    document.finalize();
+        #}
+      ENDSOURCE
+      SOURCE #unpack
+        #public boolean unpack(container _packedClass)
+        #{
+        #    Integer     version     = conPeek(_packedClass,1);
+        #
+        #    switch (version)
+        #    {
+        #        case #CurrentVersion:
+        #            [version, #CurrentList] = _packedClass;
+        #            break;
+        #        default :
+        #            return false;
+        #    }
+        #
+        #    return true;
+        #}
+      ENDSOURCE
+      SOURCE #validate
+        #public boolean validate(Object calledFrom)
+        #{
+        #    boolean ret;
+        #
+        #    ret = super(calledFrom);
+        #
+        #    if (!dlgDepartmentId.value() && !dlgProhod.value())
+        #    {
+        # //       throw error("Не указано подразделение");
+        # //       ret = false;
+        #    }
+        #
+        #    if (dlgProhod.value() && !dlgTabNum.value())
+        #    {
+        #        throw error("Не указан табельный номер");
+        #        ret = false;
+        #    }
+        #
+        #    return ret;
+        #}
+      ENDSOURCE
+      SOURCE #main
+        #static void main(Args _args)
+        #{
+        #    JSSheetVerificationReport_OK jsSheetVerificationReport_OK = new JSSheetVerificationReport_OK();
+        #    ;
+        #
+        #    if(jsSheetVerificationReport_OK.prompt())
+        #        jsSheetVerificationReport_OK.run();
+        #}
+      ENDSOURCE
+    ENDMETHODS
+  ENDCLASS
+
+***Element: END

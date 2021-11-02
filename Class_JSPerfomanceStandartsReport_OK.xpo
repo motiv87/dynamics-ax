@@ -1,0 +1,607 @@
+﻿Exportfile for AOT version 1.0 or later
+Formatversion: 1
+
+***Element: CLS
+
+; Microsoft Dynamics AX Class: JSPerfomanceStandartsReport_OK выгружен
+; --------------------------------------------------------------------------------
+  CLSVERSION 1
+  
+  CLASS #JSPerfomanceStandartsReport_OK
+    PROPERTIES
+      Name                #JSPerfomanceStandartsReport_OK
+      Extends             #RunBaseBatch
+      RunOn               #Called from
+    ENDPROPERTIES
+    
+    METHODS
+      Version: 3
+      SOURCE #calcPercentFromQty
+        #percent calcPercentFromQty(container _data)
+        #{
+        #    Percent                             percent;
+        #    JSPieceWorkJournalLine_OK           journalLine;
+        #    JSJournalTable_OK                   journalTable;
+        #    real                                workHours;
+        #    JSBrigadeFactId_OK                  factBrigade     = conPeek(_data,1);
+        #    JSPoolId_OK                         pollId          = conPeek(_data,2);
+        #    WrkCtrGroupId                       wrkCtrGroupId   = conPeek(_data,3);
+        #    JSPieceWorkBrigadeReport_KKB_OK     pieceWorkBrigadeReport = new JSPieceWorkBrigadeReport_KKB_OK();
+        #    ;
+        #
+        #    while select avg(TotalHours), ExecutorId,JournalId  from journalLine
+        #        group by ExecutorId,JournalId
+        #        join journalTable
+        #        where journalLine.BrigadeFactId         == factBrigade
+        #                && journalLine.JournalId        == journalTable.JournalId
+        #                && journalTable.WrkCtrGroupId   == wrkCtrGroupId
+        #                && journalTable.PoolId          == pollId
+        #                && journalTable.StartDate       >= startDate
+        #                && journalTable.StartDate       <= endDate
+        #    {
+        #        percent += pieceWorkBrigadeReport.perfProcent(journalLine.ExecutorId) * journalLine.TotalHours;
+        #        workHours += journalLine.TotalHours;
+        #    }
+        #        percent = percent / workHours;
+        #
+        #    return percent;
+        #}
+      ENDSOURCE
+      SOURCE #calcPercentPerfNorm
+        #container calcPercentPerfNorm(JSExecutorId_OK   _executotId)
+        #{
+        #    JSPieceWorkJournalLine_OK   journalLine;
+        #    Amount                      factAmount,prodAmount;
+        #    Percent                     factPercentQty;
+        #    JSOprTable_OK               oprTable;
+        #    JSBrigadeNormContent_OK     brigadeNormContent;
+        #    JSRateTable_OK              rateTable;
+        #    real                        brigadeHourAmmount;
+        #    ;
+        #
+        #    while select journalLine
+        #        where journalLine.ExecutorId == _executotId
+        #    {
+        #        oprTable = JSOprTable_OK::find(journalLine.OprId,journalLine.TransDate);
+        #
+        #        if (!oprTable)
+        #            throw error(strFmt("Не найдена операция %1 на дату %2 ", journalLine.OprId, journalLine.TransDate));
+        #
+        #        if(!oprTable.NormUnit_OK || !oprTable.NormAmount_OK )
+        #            throw error(strFmt("В операции %1 на дату %2 не указана норма выработки или стоимость", oprTable.OprId, journalLine.TransDate));
+        #
+        #        factAmount += journalLine.FactProduction * oprTable.NormAmount_OK / oprTable.NormUnit_OK;
+        #    }
+        #
+        #    select avg(TotalHours),BrigadeId,TransDate from journalLine
+        #        group by BrigadeId,TransDate
+        #        where journalLine.ExecutorId == _executotId;
+        #
+        #    if (!journalLine)
+        #    {
+        #        throw error(strfmt("Не введены строки по операциям в журнале %1",JSJournalExecutor_OK::find(_executotId).JournalId));
+        #    }
+        #
+        #
+        #    while select brigadeNormContent
+        #        where brigadeNormContent.BrigadeId == journalLine.BrigadeId
+        #        {
+        #            rateTable = JSRateTable_OK::find(brigadeNormContent.RateId,journalLine.TransDate);
+        #
+        #            if (!rateTable)
+        #                throw error(strFmt("Не найдена тарифная ставка  %1 на дату %2 ", brigadeNormContent.RateId, journalLine.TransDate));
+        #
+        #            brigadeHourAmmount += rateTable.RateAmount * brigadeNormContent.EmplNumber;
+        #        }
+        #    if (!brigadeHourAmmount)
+        #        throw error(strFmt("Бригадная часовая ставка равна 0 проверьте нормативный состав бригады %1", journalLine.BrigadeId));
+        #
+        #    prodAmount = journalLine.TotalHours * brigadeHourAmmount;
+        #
+        #    return [factAmount,prodAmount];
+        #}
+      ENDSOURCE
+      SOURCE #canGoBatch
+        #public boolean canGoBatch()
+        #{
+        #    return false;
+        #}
+      ENDSOURCE
+      SOURCE #caption
+        #public ClassDescription caption()
+        #{
+        #    ClassDescription ret;
+        #
+        #    ret = super();
+        #
+        #    ret = "Сводка о выполнении норм";
+        #
+        #    return ret;
+        #}
+      ENDSOURCE
+      SOURCE #classDeclaration
+        #//OK001705 21.12.2011 KKB
+        #class JSPerfomanceStandartsReport_OK extends RunBaseBatch
+        #
+        #{
+        #    StartDate                   startDate;
+        #    EndDate                     endDate;
+        #
+        #    QueryRun                    queryRun;
+        #
+        #    DialogField                 dlgStartDate,dlgEndDate;
+        #
+        #    ComExcelDocument_RU         document;
+        #    int                         curWorkSheetNum;
+        #
+        #    real                        planHours;
+        #
+        #    KeySum                      keySumDataBrig,keySumDataPool,KeySumDataWrk;
+        #
+        #    Map                         mapPool,mapWrk;
+        #
+        #    #define.TemplateName("JSPerfomanceStandartsReport_OK.xls")
+        #
+        #    #define.StartDate("StartDate")
+        #    #define.EndDate("EndDate")
+        #
+        #
+        #    #define.currentVersion(1)
+        #    #localMacro.currentList
+        #        startDate,
+        #        endDate
+        #    #endMacro
+        #
+        #}
+      ENDSOURCE
+      SOURCE #dialog
+        #protected Object dialog(DialogRunbase dialog, boolean forceOnClient)
+        #{
+        #    Object ret;
+        #
+        #    ret = super(dialog);
+        #
+        #    ret.addGroup("Период");
+        #    dlgStartDate = ret.addFieldValue(typeId(StartDate),startDate);
+        #    dlgEndDate = ret.addFieldValue(typeId(EndDate),endDate);
+        #
+        #    return ret;
+        #}
+      ENDSOURCE
+      SOURCE #getFromDialog
+        #public boolean getFromDialog()
+        #{
+        #    boolean ret;
+        #
+        #    ret = super();
+        #
+        #    startDate           = dlgStartDate.value();
+        #    endDate             = dlgEndDate.value();
+        #
+        #    return ret;
+        #}
+      ENDSOURCE
+      SOURCE #getPlanHours
+        #real getPlanHours()
+        #{
+        #    WorkCalendarDateLine    calendarDateLine;
+        #    real                    time;
+        #    ;
+        #    #TimeConstants
+        #
+        #    while select calendarDateLine
+        #            where   calendarDateLine.CalendarId == JSParameters_OK::find().YearCalendarId
+        #                &&  calendarDateLine.TransDate  >= startDate
+        #                &&  calendarDateLine.TransDate  <= endDate
+        #        {
+        #            time += calendarDateLine.ToTime - calendarDateLine.FromTime;
+        #        }
+        #
+        #        return time / #SecondsPerHour;
+        #
+        #}
+      ENDSOURCE
+      SOURCE #insertPercent
+        #void insertPercent(int _line, Container _data)
+        #{
+        #    real            numPercent,diffPercent;
+        #    real            normSost;
+        #    ;
+        #
+        #
+        #        numPercent  = conPeek(_data,1) / conPeek(_data,2) * 100;
+        #        normSost    = conPeek(_data,3) / planHours;
+        #
+        #        diffPercent = numPercent * normSost;
+        #
+        #        if(mapPool.exists(13))
+        #            mapPool.insert(13,mapPool.lookup(13)+diffPercent);
+        #          else
+        #            mapPool.insert(13,diffPercent);
+        #
+        #        if (numPercent < 100)
+        #        {
+        #          if(mapPool.exists(5))
+        #            mapPool.insert(5,mapPool.lookup(5)+normSost);
+        #          else
+        #            mapPool.insert(5,normSost);
+        #
+        #          document.insertValue(COMExcelDocument_RU::numToNameCell(5, _line), strFmt("%1", normSost) , curWorkSheetNum);
+        #        }
+        #        if (numPercent >= 100 && numPercent < 105 )
+        #        {
+        #          if(mapPool.exists(6))
+        #            mapPool.insert(6,mapPool.lookup(6)+normSost);
+        #          else
+        #            mapPool.insert(6,normSost);
+        #          document.insertValue(COMExcelDocument_RU::numToNameCell(6, _line), strFmt("%1", normSost) , curWorkSheetNum);
+        #        }
+        #        if (numPercent >= 105 && numPercent < 109 )
+        #        {
+        #          if(mapPool.exists(7))
+        #            mapPool.insert(7,mapPool.lookup(7)+normSost);
+        #          else
+        #            mapPool.insert(7,normSost);
+        #
+        #          document.insertValue(COMExcelDocument_RU::numToNameCell(7, _line), strFmt("%1", normSost) , curWorkSheetNum);
+        #        }
+        #
+        #        if (numPercent >= 109 && numPercent < 119 )
+        #        {
+        #          if(mapPool.exists(8))
+        #            mapPool.insert(8,mapPool.lookup(8)+normSost);
+        #          else
+        #            mapPool.insert(8,normSost);
+        #
+        #          document.insertValue(COMExcelDocument_RU::numToNameCell(8, _line), strFmt("%1", normSost) , curWorkSheetNum);
+        #        }
+        #
+        #        if (numPercent >= 119 && numPercent <= 130 )
+        #        {
+        #          if(mapPool.exists(9))
+        #            mapPool.insert(9,mapPool.lookup(9)+normSost);
+        #          else
+        #            mapPool.insert(9,normSost);
+        #
+        #          document.insertValue(COMExcelDocument_RU::numToNameCell(9, _line), strFmt("%1", normSost) , curWorkSheetNum);
+        #        }
+        #
+        #        if (numPercent > 130)
+        #        {
+        #          if(mapPool.exists(10))
+        #            mapPool.insert(10,mapPool.lookup(10)+normSost);
+        #          else
+        #            mapPool.insert(10,normSost);
+        #
+        #          document.insertValue(COMExcelDocument_RU::numToNameCell(10, _line), strFmt("%1", normSost) , curWorkSheetNum);
+        #        }
+        #}
+      ENDSOURCE
+      SOURCE #makeDocument
+        #private boolean makeDocument()
+        #{
+        #    ;
+        #    document = new ComExcelDocument_RU();
+        #
+        #    if (!document.newFile(templateFolderJOBSHEET_OK() + #TemplateName, false))
+        #        return checkFailed(strfmt("@SYS60367", templateFolderJOBSHEET_OK() + #TemplateName));
+        #
+        #    return true;
+        #}
+      ENDSOURCE
+      SOURCE #pack
+        #public container pack()
+        #{
+        #    return [#CurrentVersion, #CurrentList];
+        #}
+      ENDSOURCE
+      SOURCE #printSheet1
+        #void printSheet1()
+        #{
+        #    JSTimeTrans_OK              timeTrans;
+        #    JSPieceWorkJournalLine_OK   journalLine;
+        #    JSJournalTable_OK           journalTable;
+        #    JSJournalExecutor_OK        executor;
+        #    int                         i = 1,j = 1,k =1,line = 7,lineStartBrig,lineStartPool;
+        #    container                   data,keyWrk,keyPool,keyBrig;
+        #    amount                      factAmount,prodAmount;
+        #    Percent                     factPercentQty;
+        #    Map                         dataMap = new Map(Types::Container, Types::Container);
+        #    real                        WorkHours,sumWorkHours,sumWorkHoursWrk;
+        #    MapIterator                 mapIterator;
+        #
+        #    ;
+        #    #define.StartRow(7)
+        #    #define.StartRow1(7)
+        #    #define.StartRow2(8)
+        #    #define.CopyRow(1)
+        #
+        #    document.activateWorksheet(curWorkSheetNum);
+        #
+        #    document.insertValue(#StartDate, strFmt("%1",startDate) , curWorkSheetNum);
+        #    document.insertValue(#EndDate, strFmt("%1",endDate) , curWorkSheetNum);
+        #
+        #    planHours = this.getPlanHours();
+        #
+        #    if (!planHours)
+        #        throw error("Не найдены плановые часы");
+        #
+        #    keySumDataBrig = new KeySum(3,3);
+        #    keySumDataPool = new KeySum(2,3);
+        #    KeySumDataWrk  = new KeySum(1,3);
+        #
+        #
+        #
+        #    while (queryRun.next())
+        #    {
+        #        timeTrans       =   queryRun.get(tableNum(JSTimeTrans_OK));
+        #        journalTable    =   queryRun.get(tableNum(JSJournalTable_OK));
+        #        executor        =   queryRun.get(tableNum(JSJournalExecutor_OK));
+        #        [factAmount,prodAmount] = this.calcPercentPerfNorm(timeTrans.ExecutorId);
+        #
+        #        workHours               = timeTrans.WorkHours - timeTrans.OverTimeHours - timeTrans.HolidayHours;
+        #
+        #        keySumDataBrig.updateNow([executor.BrigadeFactId,
+        #                                  journalTable.PoolId,
+        #                                  journalTable.WrkCtrGroupId],
+        #                                 [factAmount,
+        #                                  prodAmount,
+        #                                  workHours]);
+        #
+        #        keySumDataPool.updateNow([journalTable.PoolId,
+        #                                  journalTable.WrkCtrGroupId],
+        #                                 [factAmount,
+        #                                  prodAmount,
+        #                                  workHours]);
+        #
+        #        KeySumDataWrk.updateNow([journalTable.WrkCtrGroupId],
+        #                                 [factAmount,
+        #                                  prodAmount,
+        #                                  workHours]);
+        #    }
+        #
+        #    document.insertRows(#StartRow, #StartRow, curWorkSheetNum,
+        #                        #CopyRow, keySumDataBrig.numOfTrans()+keySumDataPool.numOfTrans()+KeySumDataWrk.numOfTrans() -1, curWorkSheetNum);
+        #
+        #    while (KeySumDataWrk.numOfTrans() >= i)
+        #    {
+        #        keyWrk  = KeySumDataWrk.index2Key(i);
+        #        data    = KeySumDataWrk.index2Data(i);
+        #
+        #        sumWorkHoursWrk = conPeek(data,3)/planHours;
+        #
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(1, line), strFmt("%1",conPeek(keyWrk,1)) , curWorkSheetNum);
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(2, line), strFmt("%1",WrkCtrTable::find(conPeek(keyWrk,1)).Name) , curWorkSheetNum);
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(12, line), strFmt("%1",sumWorkHoursWrk) , curWorkSheetNum);
+        #        line++;
+        #        i++;
+        #
+        #        j = 1;
+        #        lineStartPool = line;
+        #        mapWrk = new Map(Types::Integer,Types::Real);
+        #        while (keySumDataPool.numOfTrans() >= j)
+        #        {
+        #            keyPool  = keySumDataPool.index2Key(j);
+        #
+        #            if (!conFind(keyPool,conPeek(keyWrk,1)))
+        #            {
+        #                j++;
+        #                continue;
+        #            }
+        #            data = keySumDataPool.index2Data(j);
+        #            sumWorkHours = conPeek(data,3)/planHours;
+        #            document.insertValue(COMExcelDocument_RU::numToNameCell(1, line), strFmt("%1",conPeek(keyPool,1)) , curWorkSheetNum);
+        #            document.insertValue(COMExcelDocument_RU::numToNameCell(2, line), strFmt("%1",JSPoolTable_OK::find(conPeek(keyPool,1)).PoolName) , curWorkSheetNum);
+        #            document.insertValue(COMExcelDocument_RU::numToNameCell(12, line), strFmt("%1",sumWorkHours) , curWorkSheetNum);
+        #            line++;
+        #            j++;
+        #
+        #            k = 1;
+        #            lineStartBrig = line;
+        #
+        #            mapPool = new Map(Types::Integer,Types::Real);
+        #
+        #            while (keySumDataBrig.numOfTrans() >= k)
+        #            {
+        #
+        #                keyBrig  = keySumDataBrig.index2Key(k);
+        #                if ((!conFind(keyBrig,conPeek(keyPool,1))) || (!conFind(keyBrig,conPeek(keyPool,2)))  )
+        #                {
+        #                    k++;
+        #                    continue;
+        #                }
+        #
+        #                data = keySumDataBrig.index2Data(k);
+        #                document.insertValue(COMExcelDocument_RU::numToNameCell(1, line), strFmt("%1",conPeek(keyBrig,1)) , curWorkSheetNum);
+        #              //          if (conPeek(keyBrig,1) like 'БР-001171')
+        #//info('check');
+        #                document.insertValue(COMExcelDocument_RU::numToNameCell(2, line), strFmt("%1",JSBrigadeFactTable_OK::find(conPeek(keyBrig,1)).Name) , curWorkSheetNum);
+        #                document.insertValue(COMExcelDocument_RU::numToNameCell(12, line), strFmt("%1",conPeek(data,3)/planHours) , curWorkSheetNum);
+        #                document.insertValue(COMExcelDocument_RU::numToNameCell(13, line), strFmt("%1",conPeek(data,1)/conPeek(data,2)*100) , curWorkSheetNum);
+        #                factPercentQty = this.calcPercentFromQty(keyBrig);
+        #                document.insertValue(COMExcelDocument_RU::numToNameCell(14, line), strFmt("%1",factPercentQty) , curWorkSheetNum);
+        #                document.insertValue(COMExcelDocument_RU::numToNameCell(15, line), strFmt("%1",(conPeek(data,1)/conPeek(data,2)*100) - factPercentQty) , curWorkSheetNum);
+        #
+        #                this.insertPercent(line,data);
+        #
+        #                line++;
+        #                k++;
+        #            }
+        #            mapIterator = new MapIterator(mapPool);
+        #
+        #            while(mapIterator.more())
+        #            {
+        #                if (!sumWorkHours)
+        #                {
+        #                    mapIterator.next();
+        #                    continue;
+        #                }
+        #                if (mapIterator.key() == 13)
+        #                {
+        #                    document.insertValue(COMExcelDocument_RU::numToNameCell(mapIterator.key(), lineStartBrig - 1), strFmt("%1",mapIterator.value()/sumWorkHours) , curWorkSheetNum);
+        #
+        #                }
+        #                else
+        #                {
+        #                    document.insertValue(COMExcelDocument_RU::numToNameCell(mapIterator.key(), lineStartBrig - 1), strFmt("%1",mapIterator.value()) , curWorkSheetNum);
+        #                }
+        #
+        #                if(mapWrk.exists(mapIterator.key()))
+        #                {
+        #                        mapWrk.insert(mapIterator.key(),mapWrk.lookup(mapIterator.key()) + mapIterator.value());
+        #                }
+        #                else
+        #                {
+        #                        mapWrk.insert(mapIterator.key(),mapIterator.value());
+        #                }
+        #                mapIterator.next();
+        #            }
+        #
+        #            document.groupRows(strFmt("A%1:O%2",lineStartBrig,line-1));
+        #
+        #        }
+        #
+        #        mapIterator = new MapIterator(mapWrk);
+        #
+        #        while(mapIterator.more())
+        #        {
+        #            if (!sumWorkHoursWrk)
+        #            {
+        #                mapIterator.next();
+        #                continue;
+        #            }
+        #
+        #            if (mapIterator.key() == 13)
+        #                document.insertValue(COMExcelDocument_RU::numToNameCell(mapIterator.key(), lineStartPool - 1), strFmt("%1",mapIterator.value() / sumWorkHoursWrk) , curWorkSheetNum);
+        #            else
+        #                document.insertValue(COMExcelDocument_RU::numToNameCell(mapIterator.key(), lineStartPool - 1), strFmt("%1",mapIterator.value()) , curWorkSheetNum);
+        #
+        #            mapIterator.next();
+        #        }
+        #
+        #        document.groupRows(strFmt("A%1:O%2",lineStartPool,line - 1));
+        #    }
+        #
+        #}
+      ENDSOURCE
+      SOURCE #queryRun
+        #public QueryRun queryRun()
+        #{
+        #    Query                   query = new Query();
+        #    QueryBuildDataSource    qdbs;
+        #    QueryBuildRange         queryBuildRange;
+        #    ;
+        #    qdbs    = query.addDataSource(tableNum(JSJournalTable_OK));
+        #    qdbs.addRange(fieldNum(JSJournalTable_OK,JournalType)).value(SysQuery::value(JSJournalType_OK::PieceWorkBrigade));
+        #    qdbs.addSortField(fieldNum(JSJournalTable_OK, WrkCtrGroupId));
+        #    qdbs.addSortField(fieldNum(JSJournalTable_OK, PoolId));
+        #    qdbs.orderMode(OrderMode::GroupBy);
+        #
+        #    qdbs    = qdbs.addDataSource(tableNum(JSJournalExecutor_OK));
+        #    qdbs.addSortField(fieldNum(JSJournalExecutor_OK, BrigadeFactId));
+        #    qdbs.orderMode(OrderMode::GroupBy);
+        #    qdbs.addlink(fieldNum(JSJournalTable_OK, JournalId),fieldNum(JSJournalExecutor_OK, JournalId));
+        #    qdbs.joinMode(JoinMode::InnerJoin);
+        #
+        #
+        #    qdbs = qdbs.addDataSource(tableNum(JSTimeTrans_OK));
+        #    qdbs.addSortField(fieldNum(JSTimeTrans_OK, ExecutorId));
+        #    qdbs.addSortField(fieldNum(JSTimeTrans_OK, JournalId));
+        #    qdbs.addSelectionField(fieldnum(JSTimeTrans_OK, WorkHours), SelectionField::Sum);
+        #    qdbs.addSelectionField(fieldnum(JSTimeTrans_OK, OverTimeHours), SelectionField::Sum);
+        #    qdbs.addSelectionField(fieldnum(JSTimeTrans_OK, HolidayHours), SelectionField::Sum);
+        #    qdbs.addSelectionField(fieldnum(JSTimeTrans_OK, DoubleHours), SelectionField::Sum);
+        #    qdbs.orderMode(OrderMode::GroupBy);
+        #    qdbs.addLink(fieldNum(JSJournalExecutor_OK, JournalId),fieldNum(JSTimeTrans_OK, JournalId));
+        #    qdbs.addLink(fieldNum(JSJournalExecutor_OK, ExecutorId),fieldNum(JSTimeTrans_OK, ExecutorId));
+        #    qdbs.joinMode(JoinMode::InnerJoin);
+        #
+        #/*   qdbs = qdbs.addDataSource(tableNum(JSPieceWorkJournalLine_OK));
+        #    qdbs.addSortField(fieldNum(JSPieceWorkJournalLine_OK, ExecutorId));
+        #    qdbs.addSortField(fieldNum(JSPieceWorkJournalLine_OK, BrigadeFactId));
+        #    qdbs.addSortField(fieldNum(JSPieceWorkJournalLine_OK, OprId));
+        #    qdbs.addSelectionField(fieldnum(JSPieceWorkJournalLine_OK, FactProduction), SelectionField::Sum);
+        #    qdbs.orderMode(OrderMode::GroupBy);
+        #    qdbs.addLink(fieldNum(JSTimeTrans_OK, JournalId),fieldNum(JSPieceWorkJournalLine_OK, JournalId));
+        #    qdbs.addLink(fieldNum(JSTimeTrans_OK, ExecutorId),fieldNum(JSPieceWorkJournalLine_OK, ExecutorId));
+        #    qdbs.joinMode(JoinMode::InnerJoin);
+        #*/
+        #    qdbs.relations(true);
+        #
+        #    qdbs = query.dataSourceTable(tableNum(JSJournalTable_OK));
+        #    qdbs.addRange(fieldNum(JSJournalTable_OK, startDate)).value(SysQuery::range(startDate,endDate));
+        #
+        #    query.recordLevelSecurity(false);
+        #
+        #    return new QueryRun(query);
+        #}
+      ENDSOURCE
+      SOURCE #run
+        ##define.Worksheet1(1)
+        #public void run()
+        #{
+        #    ;
+        #   if (this.makeDocument())
+        #    {
+        #        queryRun =  this.queryRun();
+        #
+        #        curWorkSheetNum = #Worksheet1;
+        #        this.printSheet1();
+        #
+        #        document.visible(true);
+        #        document.finalize();
+        #    }
+        #}
+      ENDSOURCE
+      SOURCE #showQueryValues
+        #public boolean showQueryValues()
+        #{
+        #    return false;
+        #}
+      ENDSOURCE
+      SOURCE #unpack
+        #public boolean unpack(container _packedClass)
+        #{
+        #    Integer     version     = conPeek(_packedClass,1);
+        #
+        #    switch (version)
+        #    {
+        #        case #CurrentVersion:
+        #            [version, #CurrentList] = _packedClass;
+        #            break;
+        #        default :
+        #            return false;
+        #    }
+        #
+        #    return true;
+        #}
+      ENDSOURCE
+      SOURCE #validate
+        #public boolean validate(Object calledFrom)
+        #{
+        #    boolean ret;
+        #
+        #    ret = super(calledFrom);
+        #
+        #    if (!startDate)
+        #        throw error("Не указана начальная дата");
+        #    if (!endDate)
+        #        throw error("Не указана конечная дата");
+        #
+        #    return ret;
+        #}
+      ENDSOURCE
+      SOURCE #main
+        #static void main(Args _args)
+        #{
+        #    JSPerfomanceStandartsReport_OK jsPerfomanceStandartsReport_OK = new JSPerfomanceStandartsReport_OK();
+        #
+        #    ;
+        #    if (jsPerfomanceStandartsReport_OK.prompt())
+        #        jsPerfomanceStandartsReport_OK.run();
+        #}
+      ENDSOURCE
+    ENDMETHODS
+  ENDCLASS
+
+***Element: END

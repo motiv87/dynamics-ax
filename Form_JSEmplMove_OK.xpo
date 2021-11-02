@@ -1,0 +1,246 @@
+﻿Exportfile for AOT version 1.0 or later
+Formatversion: 1
+
+***Element: FRM
+
+; Microsoft Dynamics AX Forms unloaded
+; --------------------------------------------------------------------------------
+FRMVERSION 5
+
+FORM #JSEmplMove_OK
+  PROPERTIES
+    Name                #JSEmplMove_OK
+  ENDPROPERTIES
+  
+  METHODS
+    Version: 3
+    SOURCE #classDeclaration
+      #// dyol 02.12.2010 OK001244 [Система ввода нарядов] -->
+      #public class FormRun extends ObjectRun
+      #// dyol 02.12.2010 OK001244 [Система ввода нарядов] <--
+      #{
+      #    JSEmplId_OK     emplId;
+      #}
+    ENDSOURCE
+    SOURCE #init
+      #public void init()
+      #{
+      #    if (element.args()
+      #    &&  element.args().dataset() == tablenum(JSEmpl_OK)
+      #    &&  element.args().record())
+      #    {
+      #        emplId = element.args().record().(fieldnum(JSEmpl_OK, JSEmplId));
+      #    }
+      #
+      #    super();
+      #
+      #    JSEmplMove_ds.object(fieldNum(JSEmplMove_OK, JSEmplId)).visible(emplId == "");
+      #}
+    ENDSOURCE
+  ENDMETHODS
+  OBJECTBANK
+    PROPERTIES
+    ENDPROPERTIES
+    
+    DATASOURCE
+      OBJECTPOOL
+        PROPERTIES
+          Name                #JSEmplMove
+          Table               #JSEmplMove_OK
+        ENDPROPERTIES
+        
+        FIELDLIST
+        ENDFIELDLIST
+      ENDOBJECTPOOL
+    ENDDATASOURCE
+  ENDOBJECTBANK
+  
+  JOINS
+  ENDJOINS
+  
+  DESIGN
+    PROPERTIES
+      Width               #Column width
+      Height              #Column height
+      Caption             #Движение персонала
+      TitleDatasource     #JSEmplMove
+    ENDPROPERTIES
+    
+    CONTAINER
+      CONTROL TAB
+        PROPERTIES
+          Name                #Tab
+          Width               #Column width
+          Height              #Column height
+        ENDPROPERTIES
+        
+        CONTAINER
+          CONTROL TABPAGE
+            PROPERTIES
+              Name                #TabPage
+              Width               #Column width
+              Height              #Column height
+              Caption             #Обзор
+            ENDPROPERTIES
+            
+            CONTAINER
+              CONTROL GRID
+                PROPERTIES
+                  Name                #Grid
+                  Width               #Column width
+                  Height              #Column height
+                  DataSource          #JSEmplMove
+                ENDPROPERTIES
+                
+                  CONTAINER
+                    CONTROL STRINGEDIT
+                      PROPERTIES
+                        Name                #JSEmplMove_JSEmplId
+                        DataSource          #JSEmplMove
+                        DataField           #JSEmplId
+                      ENDPROPERTIES
+                      
+                    ENDCONTROL 
+                    
+                    CONTROL STRINGEDIT
+                      PROPERTIES
+                        Name                #JSEmplMove_PositionId
+                        DataSource          #JSEmplMove
+                        DataField           #PositionId
+                      ENDPROPERTIES
+                      
+                    ENDCONTROL 
+                    
+                    CONTROL STRINGEDIT
+                      PROPERTIES
+                        Name                #JSEmplMove_JSRateCategory_OK
+                        DataSource          #JSEmplMove
+                        DataField           #RateCategory
+                      ENDPROPERTIES
+                      
+                    ENDCONTROL 
+                    
+                    CONTROL STRINGEDIT
+                      PROPERTIES
+                        Name                #JSEmplMove_WrkCtrGroupId
+                        DataSource          #JSEmplMove
+                        DataField           #WrkCtrGroupId
+                      ENDPROPERTIES
+                      
+                    ENDCONTROL 
+                    
+                    CONTROL DATEEDIT
+                      PROPERTIES
+                        Name                #JSEmplMove_StartDate
+                        DataSource          #JSEmplMove
+                        DataField           #StartDate
+                      ENDPROPERTIES
+                      
+                    ENDCONTROL 
+                    
+                    CONTROL DATEEDIT
+                      PROPERTIES
+                        Name                #JSEmplMove_EndDate
+                        DataSource          #JSEmplMove
+                        DataField           #EndDate
+                      ENDPROPERTIES
+                      
+                    ENDCONTROL 
+                    
+                    CONTROL STRINGEDIT
+                      PROPERTIES
+                        Name                #JSEmplMove_RateId
+                        DataSource          #JSEmplMove
+                        DataField           #RateId
+                      ENDPROPERTIES
+                      
+                    ENDCONTROL 
+                    
+                    CONTROL STRINGEDIT
+                      PROPERTIES
+                        Name                #JSEmplMove_CalendarId
+                        DataSource          #JSEmplMove
+                        DataField           #CalendarId
+                      ENDPROPERTIES
+                      
+                    ENDCONTROL 
+                    
+                    CONTROL STRINGEDIT
+                      PROPERTIES
+                        Name                #JSEmplMove_DepartmentId
+                        DataSource          #JSEmplMove
+                        DataField           #DepartmentId
+                      ENDPROPERTIES
+                      
+                    ENDCONTROL 
+                    
+                    CONTROL STRINGEDIT
+                      PROPERTIES
+                        Name                #displayDepartmentName
+                        AllowEdit           #No
+                        Label               #Подразделение
+                        DataSource          #JSEmplMove
+                        DataMethod          #displayDepartmentName
+                      ENDPROPERTIES
+                      
+                    ENDCONTROL 
+                    
+                  ENDCONTAINER
+                  
+              ENDCONTROL 
+              
+            ENDCONTAINER
+            
+          ENDCONTROL 
+          
+          CONTROL TABPAGE
+            PROPERTIES
+              Name                #GeneralPage
+              Width               #Column width
+              Height              #Column height
+              Caption             #Разное
+            ENDPROPERTIES
+            
+            CONTAINER
+              CONTROL GROUP
+                PROPERTIES
+                  Name                #MoveGroup
+                  DataSource          #JSEmplMove
+                  DataGroup           #MoveGroup
+                  AutoDataGroup       #Yes
+                ENDPROPERTIES
+                
+                  CONTAINER
+                  ENDCONTAINER
+                  
+              ENDCONTROL 
+              
+              CONTROL GROUP
+                PROPERTIES
+                  Name                #DateGroup
+                  DataSource          #JSEmplMove
+                  DataGroup           #DateGroup
+                  AutoDataGroup       #Yes
+                ENDPROPERTIES
+                
+                  CONTAINER
+                  ENDCONTAINER
+                  
+              ENDCONTROL 
+              
+            ENDCONTAINER
+            
+          ENDCONTROL 
+          
+        ENDCONTAINER
+        
+      ENDCONTROL 
+      
+    ENDCONTAINER
+    
+  ENDDESIGN
+  
+ENDFORM
+
+
+***Element: END

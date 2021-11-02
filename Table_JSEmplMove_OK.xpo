@@ -1,0 +1,319 @@
+﻿Exportfile for AOT version 1.0 or later
+Formatversion: 1
+
+***Element: DBT
+
+; Microsoft Dynamics AX Table : JSEmplMove_OK unloaded
+; --------------------------------------------------------------------------------
+  TABLEVERSION 1
+  
+  TABLE #JSEmplMove_OK
+    PROPERTIES
+      Name                #JSEmplMove_OK
+      Label               #Движение персонала
+      TitleField1         #JSEmplId
+      TitleField2         #PositionId
+      SecurityKey         #JobSheetTables
+      TableGroup          #Transaction
+    ENDPROPERTIES
+    
+    FIELDS
+      FIELD #JSEmplId
+        STRING
+        PROPERTIES
+          Name                #JSEmplId
+          Label               #Код работника
+          Mandatory           #Yes
+          AllowEditOnCreate   #No
+          AllowEdit           #No
+          Table               #JSEmplMove_OK
+          ExtendedDataType    
+            ARRAY 
+              #JSEmplId_OK
+              #
+            ENDARRAY
+          StringSize          #20
+        ENDPROPERTIES
+        
+      FIELD #PositionId
+        STRING
+        PROPERTIES
+          Name                #PositionId
+          Table               #JSEmplMove_OK
+          ExtendedDataType    
+            ARRAY 
+              #JSPositionId_OK
+              #
+            ENDARRAY
+        ENDPROPERTIES
+        
+      FIELD #RateCategory
+        STRING
+        PROPERTIES
+          Name                #RateCategory
+          Table               #JSEmplMove_OK
+          ExtendedDataType    
+            ARRAY 
+              #JSRateCategory_OK
+              #
+            ENDARRAY
+        ENDPROPERTIES
+        
+      FIELD #WrkCtrGroupId
+        STRING
+        PROPERTIES
+          Name                #WrkCtrGroupId
+          Label               #Цех
+          Table               #JSEmplMove_OK
+          ExtendedDataType    
+            ARRAY 
+              #WrkCtrGroupId
+              #
+            ENDARRAY
+        ENDPROPERTIES
+        
+      FIELD #EndDate
+        DATE
+        PROPERTIES
+          Name                #EndDate
+          Table               #JSEmplMove_OK
+          ExtendedDataType    
+            ARRAY 
+              #EndDate
+              #
+            ENDARRAY
+        ENDPROPERTIES
+        
+      FIELD #StartDate
+        DATE
+        PROPERTIES
+          Name                #StartDate
+          Table               #JSEmplMove_OK
+          ExtendedDataType    
+            ARRAY 
+              #StartDate
+              #
+            ENDARRAY
+        ENDPROPERTIES
+        
+      FIELD #RateId
+        STRING
+        PROPERTIES
+          Name                #RateId
+          Table               #JSEmplMove_OK
+          ExtendedDataType    
+            ARRAY 
+              #JSRateId_OK
+              #
+            ENDARRAY
+        ENDPROPERTIES
+        
+      FIELD #RateAmount
+        REAL
+        PROPERTIES
+          Name                #RateAmount
+          Label               #Ставка
+          Visible             #No
+          Table               #JSEmplMove_OK
+          ExtendedDataType    
+            ARRAY 
+              #AmountMST
+              #
+            ENDARRAY
+        ENDPROPERTIES
+        
+      FIELD #ExpensesCategory
+        ENUM
+        PROPERTIES
+          Name                #ExpensesCategory
+          Table               #JSEmplMove_OK
+          EnumType            #JSExpensesCategory_OK
+        ENDPROPERTIES
+        
+      FIELD #DepartmentId
+        STRING
+        PROPERTIES
+          Name                #DepartmentId
+          Table               #JSEmplMove_OK
+          ExtendedDataType    
+            ARRAY 
+              #JSDepartmentId_OK
+              #
+            ENDARRAY
+        ENDPROPERTIES
+        
+      FIELD #CalendarId
+        STRING
+        PROPERTIES
+          Name                #CalendarId
+          Table               #JSEmplMove_OK
+          ExtendedDataType    
+            ARRAY 
+              #JSCalendarId_OK
+              #
+            ENDARRAY
+        ENDPROPERTIES
+        
+    ENDFIELDS
+    GROUPS
+      GROUP #DateGroup
+        PROPERTIES
+          Name                #DateGroup
+          Label               #Даты
+        ENDPROPERTIES
+        
+        GROUPFIELDS
+          #StartDate
+          #EndDate
+        ENDGROUPFIELDS
+      ENDGROUP
+      GROUP #MoveGroup
+        PROPERTIES
+          Name                #MoveGroup
+          Label               #Движение персонала
+        ENDPROPERTIES
+        
+        GROUPFIELDS
+          #JSEmplId
+          #PositionId
+          #RateCategory
+          #WrkCtrGroupId
+          #ExpensesCategory
+        ENDGROUPFIELDS
+      ENDGROUP
+    ENDGROUPS
+    
+    INDICES
+      #EmplIdx
+      PROPERTIES
+        Name                #EmplIdx
+      ENDPROPERTIES
+      
+      INDEXFIELDS
+        #JSEmplId
+      ENDINDEXFIELDS
+      
+      #WrkCtrGroup
+      PROPERTIES
+        Name                #WrkCtrGroup
+      ENDPROPERTIES
+      
+      INDEXFIELDS
+        #WrkCtrGroupId
+      ENDINDEXFIELDS
+      
+    ENDINDICES
+    REFERENCES
+      REFERENCE #JSEmpl
+        PROPERTIES
+          Name                #JSEmpl
+          Table               #JSEmpl_OK
+        ENDPROPERTIES
+        
+        FIELDREFERENCES
+          REFERENCETYPE NORMAL
+          PROPERTIES
+            Field               #JSEmplId
+            RelatedField        #JSEmplId
+          ENDPROPERTIES
+          
+        ENDFIELDREFERENCES
+      ENDREFERENCE
+    ENDREFERENCES
+    
+    DELETEACTIONS
+    ENDDELETEACTIONS
+    
+    METHODS
+      Version: 3
+      SOURCE #displayDepartmentName
+        #// jbos 05.04.2011 OK001587 [Разработка системы нарядов] -->
+        #display Name displayDepartmentName()
+        #{
+        #    return JSDepartmentTable_OK::find(this.DepartmentId).Name;
+        #}
+        #// jbos 05.04.2011 OK001587 [Разработка системы нарядов] <--
+        #
+      ENDSOURCE
+      SOURCE #getPlanHous
+        #// dyol 16.06.2011 OK001715 [Наряды. Доработка логики для ККБ] -->
+        #JSHours_OK getPlanHous(TransDate  _transDate)
+        #{
+        #    StartDate               startDate;
+        #    EndDate                 endDate;
+        #    WorkCalendarDateLine    calendarDateLine;
+        #    TimeHour24              time;
+        #    //+Nev OK001895 08.11.2011 KKB
+        #    CalendarId              calendarId;
+        #    //-Nev OK001895 08.11.2011 KKB
+        #    #TimeConstants
+        #    ;
+        #    if (!this.CalendarId)
+        #        return 0;
+        #
+        #    startDate = mkdate(1, mthOfYr(_transDate), year(_transDate));
+        #    endDate   = endMth(_transDate);
+        #
+        #    //+Nev OK001895 08.11.2011 KKB
+        #    calendarId = WorkCalendarTable::find(this.CalendarId).BasicCalendarId;
+        #
+        #    if (!calendarId)
+        #        calendarId = this.CalendarId;
+        #
+        #    /*while select calendarDateLine
+        #        where   calendarDateLine.CalendarId == this.CalendarId
+        #            &&  calendarDateLine.TransDate  >= startDate
+        #            &&  calendarDateLine.TransDate  <= endDate
+        #    */
+        #    while select calendarDateLine
+        #        where   calendarDateLine.CalendarId == calendarId
+        #            &&  calendarDateLine.TransDate  >= startDate
+        #            &&  calendarDateLine.TransDate  <= endDate
+        #    //-Nev OK001895 08.11.2011 KKB
+        #    {
+        #        time += calendarDateLine.ToTime - calendarDateLine.FromTime;
+        #    }
+        #
+        #    return time / #SecondsPerHour;
+        #}
+        #// dyol 16.06.2011 OK001715 [Наряды. Доработка логики для ККБ] <--
+        #
+      ENDSOURCE
+      SOURCE #rateTable
+        #// dyol 16.06.2011 OK001715 [Наряды. Доработка логики для ККБ] -->
+        #JSRateTable_OK rateTable(TransDate  _transDate)
+        #{
+        #    JSRateTable_OK          rateTable;
+        #    ;
+        #    rateTable = JSRateTable_OK::find(this.RateId, _transDate);
+        #
+        #    return rateTable;
+        #}
+        #// dyol 16.06.2011 OK001715 [Наряды. Доработка логики для ККБ] <--
+        #
+      ENDSOURCE
+      SOURCE #find
+        #// jbos 22.10.2010 OK001244 [Система ввода нарядов] -->
+        #static JSEmplMove_OK find(JSEmplId_OK       _emplId,
+        #                           TransDate        _transDate,
+        #                           boolean          _forupdate = false)
+        #{
+        #    JSEmplMove_OK    emplTable;
+        #    ;
+        #    if (_forupdate)
+        #        emplTable.selectForUpdate(true);
+        #    select firstonly emplTable
+        #        where
+        #            emplTable.JSEmplId == _emplId                                  &&
+        #            (!emplTable.StartDate || emplTable.StartDate <= _transDate)    &&
+        #            (!emplTable.EndDate   || emplTable.EndDate   >= _transDate);
+        #
+        #    return emplTable;
+        #}
+        #// jbos 22.10.2010 OK001244 [Система ввода нарядов] <--
+      ENDSOURCE
+    ENDMETHODS
+  ENDTABLE
+  
+
+***Element: END

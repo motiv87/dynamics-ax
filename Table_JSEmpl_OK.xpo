@@ -1,0 +1,361 @@
+﻿Exportfile for AOT version 1.0 or later
+Formatversion: 1
+
+***Element: DBT
+
+; Microsoft Dynamics AX Table : JSEmpl_OK unloaded
+; --------------------------------------------------------------------------------
+  TABLEVERSION 1
+  
+  TABLE #JSEmpl_OK
+    PROPERTIES
+      Name                #JSEmpl_OK
+      Label               #Работники
+      TitleField1         #JSEmplId
+      TitleField2         #Name
+      SecurityKey         #JobSheetTables
+      CacheLookup         #Found
+      TableGroup          #Group
+    ENDPROPERTIES
+    
+    FIELDS
+      FIELD #JSEmplId
+        STRING
+        PROPERTIES
+          Name                #JSEmplId
+          Table               #JSEmpl_OK
+          ExtendedDataType    
+            ARRAY 
+              #JSEmplId_OK
+              #
+            ENDARRAY
+          StringSize          #20
+        ENDPROPERTIES
+        
+      FIELD #EndDate
+        DATE
+        PROPERTIES
+          Name                #EndDate
+          Label               #Дата увольнения
+          Table               #JSEmpl_OK
+          ExtendedDataType    
+            ARRAY 
+              #EndDate
+              #
+            ENDARRAY
+        ENDPROPERTIES
+        
+      FIELD #StartDate
+        DATE
+        PROPERTIES
+          Name                #StartDate
+          Label               #Дата приема на работу
+          Table               #JSEmpl_OK
+          ExtendedDataType    
+            ARRAY 
+              #StartDate
+              #
+            ENDARRAY
+        ENDPROPERTIES
+        
+      FIELD #Name
+        STRING
+        PROPERTIES
+          Name                #Name
+          Label               #Работник
+          Table               #JSEmpl_OK
+          ExtendedDataType    
+            ARRAY 
+              #Name
+              #
+            ENDARRAY
+          StringSize          #140
+        ENDPROPERTIES
+        
+      FIELD #TabNum
+        STRING
+        PROPERTIES
+          Name                #TabNum
+          Label               #Табельный номер
+          Table               #JSEmpl_OK
+          ExtendedDataType    
+            ARRAY 
+              #JSTabNum_OK
+              #
+            ENDARRAY
+        ENDPROPERTIES
+        
+      FIELD #LastName
+        STRING
+        PROPERTIES
+          Name                #LastName
+          Label               #Фамилия
+          Table               #JSEmpl_OK
+          ExtendedDataType    
+            ARRAY 
+              #Name
+              #
+            ENDARRAY
+          StringSize          #140
+        ENDPROPERTIES
+        
+      FIELD #CalendarId
+        STRING
+        PROPERTIES
+          Name                #CalendarId
+          Table               #JSEmpl_OK
+          ExtendedDataType    
+            ARRAY 
+              #JSCalendarId_OK
+              #
+            ENDARRAY
+        ENDPROPERTIES
+        
+      FIELD #JSSiteId
+        STRING
+        PROPERTIES
+          Name                #JSSiteId
+          Table               #JSEmpl_OK
+          ExtendedDataType    
+            ARRAY 
+              #JSSiteId_OK
+              #
+            ENDARRAY
+        ENDPROPERTIES
+        
+    ENDFIELDS
+    GROUPS
+      GROUP #AutoLookup
+        PROPERTIES
+          Name                #AutoLookup
+        ENDPROPERTIES
+        
+        GROUPFIELDS
+          #JSEmplId
+          #TabNum
+          #Name
+        ENDGROUPFIELDS
+      ENDGROUP
+      GROUP #DateGroup
+        PROPERTIES
+          Name                #DateGroup
+          Label               #Даты
+        ENDPROPERTIES
+        
+        GROUPFIELDS
+          #StartDate
+          #EndDate
+        ENDGROUPFIELDS
+      ENDGROUP
+      GROUP #EmplGroup
+        PROPERTIES
+          Name                #EmplGroup
+          Label               #Работник
+        ENDPROPERTIES
+        
+        GROUPFIELDS
+          #Name
+          #JSEmplId
+          #JSSiteId
+        ENDGROUPFIELDS
+      ENDGROUP
+    ENDGROUPS
+    
+    INDICES
+      #JSEmplIdx
+      PROPERTIES
+        Name                #JSEmplIdx
+        AllowDuplicates     #No
+      ENDPROPERTIES
+      
+      INDEXFIELDS
+        #JSEmplId
+      ENDINDEXFIELDS
+      
+      #TabNumIdx
+      PROPERTIES
+        Name                #TabNumIdx
+      ENDPROPERTIES
+      
+      INDEXFIELDS
+        #TabNum
+      ENDINDEXFIELDS
+      
+    ENDINDICES
+    REFERENCES
+    ENDREFERENCES
+    
+    DELETEACTIONS
+    ENDDELETEACTIONS
+    
+    METHODS
+      Version: 3
+      SOURCE #displayDepartmentName
+        #// dyol 12.04.2011 OK001244 [Разработка системы нарядов] -->
+        #display Name displayDepartmentName()
+        #{
+        #    JSEmplMove_OK           emplMove = JSEmplMove_OK::find(this.JSEmplId, systemDateGet());
+        #    ;
+        #    return JSDepartmentTable_OK::find(emplMove.DepartmentId).Name;
+        #}
+        #// dyol 12.04.2011 OK001244 [Разработка системы нарядов] <--
+        #
+      ENDSOURCE
+      SOURCE #checkEmplFired
+        #// dyol 02.12.2010 OK001244 [Система ввода нарядов] -->
+        #static boolean checkEmplFired(JSEmplId_OK   _emplId,
+        #                              TransDate     _transDate)
+        #{
+        #    JSEmpl_OK    emplTable;
+        #    TransDate    transDate;
+        #    ;
+        #    transDate = JSEmpl_OK::find(_emplId).EndDate;
+        #    if (!transDate || transDate >= _transDate)
+        #        return true;
+        #
+        #    return checkFailed(strfmt("Сотрудник уволен на дату %1", _transDate));
+        #}
+        #// dyol 02.12.2010 OK001244 [Система ввода нарядов] <--
+        #
+      ENDSOURCE
+      SOURCE #find
+        #// jbos 22.10.2010 OK001244 [Система ввода нарядов] -->
+        #static JSEmpl_OK find(JSEmplId_OK   _emplId,
+        #                      boolean       _forupdate = false)
+        #{
+        #    JSEmpl_OK    emplTable;
+        #    ;
+        #    if (_emplId)
+        #    {
+        #        emplTable.selectForUpdate(_forupdate);
+        #
+        #        select firstonly emplTable
+        #            where emplTable.JSEmplId == _emplId;
+        #    }
+        #
+        #    return emplTable;
+        #}
+        #// jbos 22.10.2010 OK001244 [Система ввода нарядов] <--
+        #
+      ENDSOURCE
+      SOURCE #findByTabNum
+        #// dyol 02.12.2010 OK001244 [Система ввода нарядов] -->
+        #static JSEmpl_OK findByTabNum(JSTabNum_OK      _tabNum,
+        #                              TransDate        _transDate,
+        #                              boolean          _forupdate = false)
+        #{
+        #    JSEmpl_OK    emplTable;
+        #    ;
+        #    if (_tabNum)
+        #    {
+        #        emplTable.selectForUpdate(_forupdate);
+        #
+        #        select firstonly emplTable
+        #            where   emplTable.TabNum      == _tabNum
+        #                &&  (!emplTable.StartDate || emplTable.StartDate <= _transDate)
+        #                &&  (!emplTable.EndDate   || emplTable.EndDate   >= _transDate);
+        #    }
+        #
+        #    return emplTable;
+        #}
+        #// dyol 02.12.2010 OK001244 [Система ввода нарядов] <--
+        #
+      ENDSOURCE
+      SOURCE #lookupAvailEmplId
+        #// dyol 02.11.2010 OK001244 [Система ввода нарядов] -->
+        #static void lookupAvailEmplId(FormStringControl _ctrl,
+        #                              TransDate         _transDate)
+        #{
+        #    SysTableLookup          sysTableLookup = SysTableLookup::newParameters(tableNum(JSEmpl_OK), _ctrl);
+        #    Query                   query = new Query();
+        #    QueryBuildDataSource    queryBuildDataSource;
+        #    QueryBuildRange         queryBuildRange;
+        #    ;
+        #    sysTableLookup.addLookupfield(fieldNum(JSEmpl_OK, JSEmplId));
+        #    sysTableLookup.addLookupfield(fieldNum(JSEmpl_OK, TabNum));
+        #    sysTableLookup.addLookupfield(fieldNum(JSEmpl_OK, Name));
+        #
+        #    queryBuildDataSource = query.addDataSource(tablenum(JSEmpl_OK));
+        #    queryBuildRange = queryBuildDataSource.addRange(fieldnum(JSEmpl_OK, EndDate));
+        #    queryBuildRange.value(SysQuery::valueEmptyString());
+        #
+        #    queryBuildDataSource = query.dataSourceTable(tablenum(JSEmpl_OK)).addDataSource(tablenum(JSEmplMove_OK));
+        #    queryBuildDataSource.relations(true);
+        #    queryBuildRange = queryBuildDataSource.addRange(fieldnum(JSEmplMove_OK, StartDate));
+        #    queryBuildRange.value(queryRange(dateNull(), _transDate));
+        #    queryBuildRange = queryBuildDataSource.addRange(fieldnum(JSEmplMove_OK, EndDate));
+        #    queryBuildRange.value(queryRange(_transDate, dateMax()));
+        #
+        #    sysTableLookup.parmQuery(query);
+        #    sysTableLookup.performFormLookup();
+        #}
+        #// dyol 02.11.2010 OK001244 [Система ввода нарядов] <--
+        #
+      ENDSOURCE
+      SOURCE #lookupEmplIdForBrigade
+        #// dyol 02.11.2010 OK001244 [Система ввода нарядов] -->
+        #static void lookupEmplIdForBrigade(FormStringControl _ctrl,
+        #                                   TransDate         _transDate,
+        #                                   JSBrigadeId_OK    _brigadeId)
+        #{
+        #    SysTableLookup          sysTableLookup = SysTableLookup::newParameters(tableNum(JSEmpl_OK), _ctrl);
+        #    Query                   query = new Query();
+        #    QueryBuildDataSource    queryBuildDataSource;
+        #    QueryBuildRange         queryBuildRange;
+        #    ;
+        #    sysTableLookup.addLookupfield(fieldNum(JSEmpl_OK, JSEmplId));
+        #    sysTableLookup.addLookupfield(fieldNum(JSEmpl_OK, Name));
+        #
+        #    queryBuildDataSource = query.addDataSource(tablenum(JSEmpl_OK));
+        #    queryBuildRange = queryBuildDataSource.addRange(fieldnum(JSEmpl_OK, StartDate));
+        #    queryBuildRange.value(SysQuery::valueEmptyString());
+        #
+        #    queryBuildDataSource = query.dataSourceTable(tablenum(JSEmpl_OK)).addDataSource(tablenum(JSEmplMove_OK));
+        #    queryBuildDataSource.relations(true);
+        #    queryBuildRange = queryBuildDataSource.addRange(fieldnum(JSEmplMove_OK, StartDate));
+        #    queryBuildRange.value(queryRange(dateNull(), _transDate));
+        #    queryBuildRange = queryBuildDataSource.addRange(fieldnum(JSEmplMove_OK, EndDate));
+        #    queryBuildRange.value(queryRange(_transDate, dateMax()));
+        #
+        #
+        #    queryBuildDataSource = query.dataSourceTable(tablenum(JSEmplMove_OK)).addDataSource(tablenum(JSBrigadeNormContent_OK));
+        #    queryBuildRange = queryBuildDataSource.addRange(fieldnum(JSBrigadeNormContent_OK, BrigadeId));
+        #    queryBuildRange.value(_brigadeId);
+        #    queryBuildDataSource.addLink(fieldnum(JSEmplMove_OK, RateId), fieldnum(JSBrigadeNormContent_OK, RateId));
+        #
+        #    sysTableLookup.parmQuery(query);
+        #    sysTableLookup.performFormLookup();
+        #}
+        #// dyol 02.11.2010 OK001244 [Система ввода нарядов] <--
+        #
+      ENDSOURCE
+      SOURCE #lookupTabNum
+        #// dyol 02.12.2010 OK001244 [Система ввода нарядов] -->
+        #static void lookupTabNum(FormStringControl _ctrl,
+        #                         TransDate         _transDate)
+        #{
+        #    SysTableLookup          sysTableLookup = SysTableLookup::newParameters(tableNum(JSEmpl_OK), _ctrl);
+        #    Query                   query = new Query();
+        #    QueryBuildDataSource    queryBuildDataSource;
+        #    QueryBuildRange         queryBuildRange;
+        #    ;
+        #    sysTableLookup.addLookupfield(fieldNum(JSEmpl_OK, TabNum));
+        #    sysTableLookup.addLookupfield(fieldNum(JSEmpl_OK, Name));
+        #
+        #    queryBuildDataSource = query.addDataSource(tablenum(JSEmpl_OK));
+        #    queryBuildRange = queryBuildDataSource.addRange(fieldnum(JSEmpl_OK, StartDate));
+        #    queryBuildRange.value(queryRange(dateNull(), _transDate));
+        #    queryBuildRange = queryBuildDataSource.addRange(fieldnum(JSEmpl_OK, EndDate));
+        #    queryBuildRange.value(sysQuery::valueEmptyString());
+        #
+        #    sysTableLookup.parmQuery(query);
+        #    sysTableLookup.performFormLookup();
+        #}
+        #// dyol 02.12.2010 OK001244 [Система ввода нарядов] <--
+        #
+      ENDSOURCE
+    ENDMETHODS
+  ENDTABLE
+  
+
+***Element: END

@@ -1,0 +1,550 @@
+﻿Exportfile for AOT version 1.0 or later
+Formatversion: 1
+
+***Element: CLS
+
+; Microsoft Dynamics AX Class: JSChargeOnEmplReport_OK выгружен
+; --------------------------------------------------------------------------------
+  CLSVERSION 1
+  
+  CLASS #JSChargeOnEmplReport_OK
+    PROPERTIES
+      Name                #JSChargeOnEmplReport_OK
+      Extends             #RunBaseBatch
+      RunOn               #Called from
+    ENDPROPERTIES
+    
+    METHODS
+      Version: 3
+      SOURCE #canGoBatch
+        #public boolean canGoBatch()
+        #{
+        #    return false;
+        #}
+      ENDSOURCE
+      SOURCE #caption
+        #public ClassDescription caption()
+        #{
+        #    ClassDescription ret;
+        #
+        #    ret = "Начисления по сотрудникам";
+        #
+        #    return ret;
+        #}
+      ENDSOURCE
+      SOURCE #classDeclaration
+        #//OK001705 10.09.2011 KKB
+        #class JSChargeOnEmplReport_OK extends RunBaseBatch
+        #{
+        #    StartDate                   startDate;
+        #    EndDate                     endDate;
+        #    JSTabNum_OK                 tabNum;
+        #    JSDepartmentId_OK           jsDepartmentId;
+        #    JSJournalNamePeriodical_OK  journalNamePeriodical;
+        #    JSPaymTypeId_OK             paymId;
+        #    JSAllJournalType_OK         allJournalType;
+        #    DialogField                 dlgStartDate,dlgEndDate,dlgTabNum,dlgJournalNamePeriodical,dlgDepartmentId,dlgPaymId,dlgAllJournalType;
+        #//+Nab OK0031Temp 19.09.2014 KKB
+        #    DialogField                 dlgJournalNameBrigade;
+        #    JSJournalNameBrigade_OK     JournalNameBrigade;
+        #//-Nab OK0031Temp 19.09.2014 KKB
+        #    ComExcelDocument_RU         document;
+        #    int                         curWorkSheetNum;
+        #
+        #    #define.TemplateName("JSChargeOnEmplReport.xls")
+        #    #define.startPosition(4)
+        #    #define.StartDate("StartDate")
+        #    #define.EndDate("EndDate")
+        #
+        #    #define.CurrentVersion(1)
+        #    #localmacro.CurrentList
+        #    startDate,
+        #    endDate,
+        #    tabNum,
+        #    jsDepartmentId,
+        #    journalNamePeriodical
+        #    #endmacro
+        #}
+      ENDSOURCE
+      SOURCE #dialog
+        #protected Object dialog(DialogRunbase dialog, boolean forceOnClient)
+        #{
+        #    DialogRunbase ret;
+        #
+        #    ret = super(dialog, forceOnClient);
+        #
+        #    ret.addGroup("Период");
+        #    dlgStartDate = ret.addFieldValue(typeId(StartDate),startDate);
+        #    dlgEndDate = ret.addFieldValue(typeId(EndDate),endDate);
+        #
+        #    ret.addGroup("Параметры");
+        #    dlgTabNum = ret.addFieldValue(typeId(JSTabNum_OK),tabNum);
+        #//+Nab OK0031Temp 19.09.2014 KKB
+        #//  dlgJournalNamePeriodical = ret.addFieldValue(typeId(JSJournalNamePeriodical_OK),journalNamePeriodical,"Название журнала");
+        #    dlgJournalNamePeriodical = ret.addFieldValue(typeId(JSJournalNamePeriodical_OK), journalNamePeriodical, "Название повременного журнала");
+        #    dlgJournalNameBrigade    = ret.addFieldValue(typeId(JSJournalNameBrigade_OK),journalNameBrigade,"Название бригадного журнала");
+        #//-Nab OK0031Temp 19.09.2014 KKB
+        #
+        #
+        #    dlgDepartmentId     =   ret.addFieldValue(typeId(JSDepartmentID_OK),jsDepartmentId);
+        #    dlgPaymId           =   ret.addFieldValue(typeId(JSPaymTypeId_OK),paymId);
+        #    dlgAllJournalType   =   ret.addFieldValue(typeId(JSAllJournalType_OK),allJournalType);
+        #
+        #    return ret;
+        #}
+      ENDSOURCE
+      SOURCE #getEndDate
+        #EndDate getEndDate(endDate    _endDate = endDate)
+        #{
+        #    ;
+        #    endDate = _endDate;
+        #
+        #    return endDate;
+        #}
+      ENDSOURCE
+      SOURCE #getFromDialog
+        #public boolean getFromDialog()
+        #{
+        #    boolean ret;
+        #    ;
+        #    ret = super();
+        #
+        #    startDate               = dlgStartDate.value();
+        #    endDate                 = dlgEndDate.value();
+        #    tabNum                  = dlgTabNum.value();
+        #    journalNamePeriodical   = dlgJournalNamePeriodical.value();
+        #    jsDepartmentId          = dlgDepartmentId.value();
+        #    paymId                  = dlgPaymId.value();
+        #    allJournalType          = dlgAllJournalType.value();
+        #//+Nab OK0031Temp 19.09.2014 KKB
+        #    JournalNameBrigade      = dlgJournalNameBrigade.value();
+        #//-Nab OK0031Temp 19.09.2014 KKB
+        #    return ret;
+        #}
+      ENDSOURCE
+      SOURCE #getJSJournalNamePeriodical
+        #JSJournalNamePeriodical_OK getJSJournalNamePeriodical(JSJournalNamePeriodical_OK    _journalNamePeriodical = journalNamePeriodical)
+        #{
+        #    ;
+        #    journalNamePeriodical = _journalNamePeriodical;
+        #
+        #    return journalNamePeriodical;
+        #}
+      ENDSOURCE
+      SOURCE #getStartDate
+        #startDate getStartDate(startDate    _startDate = startDate)
+        #{
+        #    ;
+        #    startDate = _startDate;
+        #
+        #    return startDate;
+        #}
+      ENDSOURCE
+      SOURCE #makeDocument
+        #private boolean makeDocument()
+        #{
+        #    ;
+        #    document = new ComExcelDocument_RU();
+        #
+        #    if (!document.newFile(templateFolderJOBSHEET_OK() + #TemplateName, false))
+        #        return checkFailed(strfmt("@SYS60367", templateFolderJOBSHEET_OK() + #TemplateName));
+        #
+        #    return true;
+        #}
+      ENDSOURCE
+      SOURCE #pack
+        #public container pack()
+        #{
+        #    return [#CurrentVersion,#CurrentList];
+        #}
+      ENDSOURCE
+      SOURCE #printSheet1
+        #void printSheet1()
+        #{
+        #    JSEmpl_OK                   empl = JSEmpl_OK::findByTabNum(tabNum,startDate);
+        #    JSEmplMove_OK               emplMove;
+        #    JSRateTable_OK              rateTable;
+        #    JSCalcTrans_OK              calcTrans,CalcTimeTrans,calcTransEmpl,calcTransComb,calcTransPaym;
+        #    JSTimeTrans_OK              timeTrans,timeTransEmpl;
+        #    JSJournalExecutor_OK        executor,executorTrans,executorComb,executorPaym;
+        #    JSJournalType_OK            typeJournal;
+        #    WrkCtrTable                 wrkCtrTable;
+        #    JSPaymentJournalLines_OK    paym;
+        #    JSCombinationTrans_OK       comb;
+        #    JSJournalTable_OK           journalTable;
+        #    counter                     i = 1,j=1;
+        #    KeySum                      keySum = new KeySum(6,2);
+        #    KeySum                      keySumTotal = new KeySum(1,1);
+        #    KeySum                      keySumPercent = new KeySum(1,1);
+        #    str                         journalNameId,emplIdOld,emplId,name,paymType,journalType,poolId,brigadeId,brigadeFactId,wrkCtrGroupId,departmentId,rateId;
+        #    real                        prodTarif,factTarif,amount,hours;
+        #//+Nab OK003208 02.08.2016 KKB
+        #    real                        totalHours,oldTotalHours, sumTotalHours;
+        #//-Nab OK003208 02.08.2016 KKB
+        #    boolean                     totalTrue;
+        #    set                         set = new Set(Types::Container);
+        #    ;
+        #
+        #   if (!empl.JSEmplId && tabNum)
+        #         throw error("Недопустимый сотрудник");
+        #
+        #    document.insertValue(#StartDate,startDate);
+        #    document.insertValue(#EndDate,endDate);
+        #
+        #    switch (allJournalType)
+        #    {
+        #        case (JSAllJournalType_OK::Payment):
+        #        {
+        #            typeJournal = JSJournalType_OK::Payment;
+        #            break;
+        #        }
+        #        case (JSAllJournalType_OK::Periodical):
+        #        {
+        #            typeJournal = JSJournalType_OK::Periodical;
+        #            break;
+        #        }
+        #        case (JSAllJournalType_OK::PieceWorkBrigade):
+        #        {
+        #            typeJournal = JSJournalType_OK::PieceWorkBrigade;
+        #            break;
+        #        }
+        #    }
+        #
+        #
+        #
+        #    select * from wrkCtrTable
+        #        where  wrkCtrTable.IsGroup
+        #             && (wrkCtrTable.JSDepartmentId_OK
+        #             && wrkCtrTable.JSDepartmentId_OK == jsDepartmentId);
+        #
+        #
+        #    while select * from calcTrans
+        #        order by EmplId
+        #        where (!empl.JSEmplId || calcTrans.EmplId == empl.JSEmplId)
+        #            && calcTrans.TransDate >= startDate
+        #            && calcTrans.TransDate <=endDate
+        #            && !calcTrans.Cancelled
+        #            && (!paymId || calcTrans.PaymTypeId == paymId )
+        #        join journalTable
+        #            where journalTable.JournalId == calcTrans.JournalId
+        #                && (!typeJournal
+        #                    || journalTable.JournalType == typeJournal)
+        #                && (!journalNamePeriodical
+        #                || journalTable.JournalNameId == journalNamePeriodical)
+        #//+Nab OK0031Temp 19.09.2014 KKB
+        #                && (!journalNameBrigade
+        #                || journalTable.JournalNameId == journalNameBrigade)
+        #//-Nab OK0031Temp 19.09.2014 KKB
+        #                && (!jsDepartmentId
+        #                || journalTable.DepartmentId == jsDepartmentId
+        #                || (wrkCtrTable.WrkCtrGroupId && journalTable.WrkCtrGroupId == wrkCtrTable.WrkCtrGroupId))
+        #
+        #        join executor
+        #            where executor.CalcId == calcTrans.CalcId
+        #                && executor.JournalId == journalTable.JournalId
+        #                //&& executor.BrigadeFactId == "БР-000093"
+        #
+        #        {
+        #
+        #        while select  * from executorTrans
+        #            where executorTrans.CalcId == executor.CalcId
+        #                && executorTrans.JournalId == executor.JournalId
+        #            join CalcTimeTrans
+        #                    where CalcTimeTrans.CalcId      == executorTrans.CalcId
+        #                        && CalcTimeTrans.JournalId  == executorTrans.JournalId
+        #                        && CalcTimeTrans.EmplId     ==  calcTrans.EmplId
+        #                        && (!paymId || CalcTimeTrans.PaymTypeId == paymId )
+        #                    join timeTransEmpl
+        #                    where timeTransEmpl.RecId == CalcTimeTrans.RefRecId
+        #                        && timeTransEmpl.ExecutorId == executorTrans.ExecutorId
+        #                        && timeTransEmpl.TableId == CalcTimeTrans.RefTableId
+        #        {
+        #            if (set.in([CalcTimeTrans.RecId]))
+        #                    continue;
+        #
+        #            timeTransEmpl.FactTariffAmount = (timeTransEmpl.FactTariffAmount * (timeTransEmpl.WrkStopHours ? (1 - timeTransEmpl.WrkStopHours / timeTransEmpl.WorkHours):1));
+        #
+        #            keySum.updateNow([CalcTimeTrans.PoolId,CalcTimeTrans.BrigadeId,CalcTimeTrans.BrigadeFactId,
+        #                                CalcTimeTrans.PaymTypeId,CalcTimeTrans.EmplId,journalTable.JournalType,
+        #                                journalTable.DepartmentId,journalTable.WrkCtrGroupId,timeTransEmpl.RateId,journalTable.JournalNameId,CalcTimeTrans.TransType],
+        #                                [CalcTimeTrans.Amount,CalcTimeTrans.Hours,timeTransEmpl.ProdAmount,timeTransEmpl.FactTariffAmount]);
+        #            keySumTotal.updateNow(CalcTimeTrans.EmplId,CalcTimeTrans.Amount);
+        #
+        #            set.add([CalcTimeTrans.RecId]);
+        #        }
+        #
+        #
+        #        while select  * from executorComb
+        #            where executorComb.CalcId == executor.CalcId
+        #                && executorComb.JournalId == executor.JournalId
+        #            join calcTransComb
+        #                    where calcTransComb.CalcId      == executorComb.CalcId
+        #                        && calcTransComb.JournalId  == executorComb.JournalId
+        #                        && calcTransComb.EmplId     ==  calcTrans.EmplId
+        #                        && (!paymId || calcTransComb.PaymTypeId == paymId )
+        #                    join comb
+        #                    where comb.RecId == calcTransComb.RefRecId
+        #                        && comb.ExecutorId == executorComb.ExecutorId
+        #                        && comb.TableId == calcTransComb.RefTableId
+        #        {
+        #            if (set.in([calcTransComb.RecId]))
+        #                continue;
+        #
+        #            keySum.updateNow([calcTransComb.PoolId,calcTransComb.BrigadeId,calcTransComb.BrigadeFactId,
+        #                            calcTransComb.PaymTypeId,calcTransComb.EmplId,journalTable.JournalType,
+        #                            journalTable.DepartmentId,journalTable.WrkCtrGroupId,comb.RateId,journalTable.JournalNameId,calcTransComb.TransType],
+        #                            [calcTransComb.Amount,calcTransComb.Hours,0,0]);
+        #            keySumTotal.updateNow(calcTransComb.EmplId,calcTransComb.Amount);
+        #
+        #            set.add([calcTransComb.RecId]);
+        #        }
+        #
+        #        while select  * from executorPaym
+        #            where executorPaym.CalcId == executor.CalcId
+        #                && executorPaym.JournalId == executor.JournalId
+        #            join calcTransPaym
+        #                    where calcTransPaym.CalcId      == executorPaym.CalcId
+        #                        && calcTransPaym.JournalId  == executorPaym.JournalId
+        #                        && calcTransPaym.EmplId     ==  calcTrans.EmplId
+        #                        && (!paymId || calcTransPaym.PaymTypeId == paymId )
+        #                    join paym
+        #                    where paym.RecId == calcTransPaym.RefRecId
+        #                        && paym.ExecutorId == executorPaym.ExecutorId
+        #                        && paym.TableId == calcTransPaym.RefTableId
+        #        {
+        #            if (set.in([calcTransPaym.RefRecId]))
+        #                continue;
+        #
+        #            keySum.updateNow([calcTransPaym.PoolId,calcTransPaym.BrigadeId,calcTransPaym.BrigadeFactId,
+        #                            calcTransPaym.PaymTypeId,calcTransPaym.EmplId,journalTable.JournalType,
+        #                            journalTable.DepartmentId,journalTable.WrkCtrGroupId,"",journalTable.JournalNameId,calcTransPaym.TransType],
+        #                            [calcTransPaym.Amount,calcTransPaym.Hours,0,0]);
+        #            keySumTotal.updateNow(calcTransPaym.EmplId,calcTransPaym.Amount);
+        #
+        #            set.add([calcTransPaym.RefRecId]);
+        #        }
+        #
+        #
+        #
+        #    }
+        #
+        #/*
+        #    while select * from calcTrans
+        #        order by EmplId
+        #        where (!empl.JSEmplId || calcTrans.EmplId == empl.JSEmplId)
+        #            && calcTrans.TransDate >= startDate
+        #            && calcTrans.TransDate <=endDate
+        #            && !calcTrans.Cancelled
+        #            && (!paymId || calcTrans.PaymTypeId == paymId )
+        #        join journalTable
+        #            where journalTable.JournalId == calcTrans.JournalId
+        #                && (!typeJournal
+        #                    || journalTable.JournalType == typeJournal)
+        #                && (!journalNamePeriodical
+        #                || journalTable.JournalNameId == journalNamePeriodical)
+        #
+        #                && (!jsDepartmentId
+        #                || journalTable.DepartmentId == jsDepartmentId
+        #
+        #                || (wrkCtrTable.WrkCtrGroupId && journalTable.WrkCtrGroupId == wrkCtrTable.WrkCtrGroupId))
+        #
+        #        join executor
+        #            where executor.CalcId == calcTrans.CalcId
+        #                && executor.JournalId == journalTable.JournalId
+        #            join paym
+        #                where paym.RecId == calcTrans.RefRecId
+        #                    && paym.ExecutorId == executor.ExecutorId
+        #                   && paym.TableId == calcTrans.RefTableId
+        #
+        #    {
+        #        keySum.updateNow([calcTrans.PoolId,calcTrans.BrigadeId,calcTrans.BrigadeFactId,
+        #                            calcTrans.PaymTypeId,calcTrans.EmplId,journalTable.JournalType,
+        #                            journalTable.DepartmentId,journalTable.WrkCtrGroupId,"",journalTable.JournalNameId,calcTrans.TransType],
+        #                            [calcTrans.Amount,calcTrans.Hours,0,0]);
+        #        keySumTotal.updateNow(calcTrans.EmplId,calcTrans.Amount);
+        #    }
+        #*/
+        #    if (!keySum.numOfTrans())
+        #    {
+        #        document.finalize();
+        #        throw error("Отчет не содержит данных");
+        #    }
+        #
+        #    startLengthyOperation();
+        #    this.progressInit("Сбор данных",keySum.numOfTrans(),#AviSearch);
+        #
+        #    while (j <= keySum.numOfTrans())
+        #    {
+        #        totalTrue = false;
+        #        progress.incCount();
+        #        progress.setText(empl.Name);
+        #
+        #        [poolId,brigadeId,brigadeFactId,paymType,emplId,journalType,departmentId,wrkCtrGroupId,rateId,journalNameId] = keySum.index2Key(j);
+        #        [amount,hours,prodTarif,factTarif] = keySum.index2Data(j);
+        #
+        #        empl = JSEmpl_OK::find(emplId);
+        #
+        #//+Nab OK003208 02.08.2016 KKB
+        #
+        #        if (j>1 && emplIdOld != empl.JSEmplId && !paymId)
+        #        {
+        #            oldTotalHours = totalHours;
+        #            totalHours    = 0;
+        #        }
+        #
+        #        if(JSMainType_OK::find(paymType))
+        #        {
+        #            totalHours      += hours;
+        #            sumTotalHours   += hours;
+        #        }
+        #//-Nab OK003208 02.08.2016 KKB
+        #
+        #       if (j>1 && emplIdOld != empl.JSEmplId && !paymId)
+        #        {
+        #
+        #            document.insertValue(COMExcelDocument_RU::numToNameCell(1,#StartPosition + i),"");
+        #            document.insertValue(COMExcelDocument_RU::numToNameCell(2,#StartPosition + i),"");
+        #            document.insertValue(COMExcelDocument_RU::numToNameCell(3,#StartPosition + i),"");
+        #            document.insertValue(COMExcelDocument_RU::numToNameCell(4,#StartPosition + i),"");
+        #            document.insertValue(COMExcelDocument_RU::numToNameCell(5,#StartPosition + i),"");
+        #            document.insertValue(COMExcelDocument_RU::numToNameCell(6,#StartPosition + i),"Итог");
+        #            document.insertValue(COMExcelDocument_RU::numToNameCell(7,#StartPosition + i),"");
+        #            document.insertValue(COMExcelDocument_RU::numToNameCell(8,#StartPosition + i),"");
+        #            document.insertValue(COMExcelDocument_RU::numToNameCell(9,#StartPosition + i),"");
+        #//+Nab OK003208 02.08.2016 KKB
+        #//          document.insertValue(COMExcelDocument_RU::numToNameCell(10,#StartPosition + i),"");
+        #            document.insertValue(COMExcelDocument_RU::numToNameCell(10,#StartPosition + i),oldTotalHours);
+        #//+Nab OK003208 02.08.2016 KKB
+        #            document.insertValue(COMExcelDocument_RU::numToNameCell(11,#StartPosition + i),currency::amount(keySumTotal.key2Data(emplIdOld)));
+        #            document.insertValue(COMExcelDocument_RU::numToNameCell(12,#StartPosition + i),"");
+        #            document.insertRow(#StartPosition + i);
+        #            i++;
+        #
+        #        }
+        #
+        #        emplIdOld = empl.JSEmplId;
+        #
+        #        emplMove = JSEmplMove_OK::find(empl.JSEmplId,endDate);
+        #        rateTable = JSRateTable_OK::find(emplMove.RateId,endDate);
+        #
+        #        if (departmentId)
+        #            document.insertValue(COMExcelDocument_RU::numToNameCell(1,#StartPosition + i),JSDepartmentTable_OK::find(departmentId).Name);
+        #        else
+        #            document.insertValue(COMExcelDocument_RU::numToNameCell(1,#StartPosition + i),wrkCtrGroupId);
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(2,#StartPosition + i),brigadeFactId ? brigadeFactId +" ("+brigadeId +")" : journalNameId);
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(3,#StartPosition + i),empl.TabNum);
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(4,#StartPosition + i),empl.Name);
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(5,#StartPosition + i),paymType + " (" +JSPaymType_OK::find(paymType).Name +")");
+        #        switch (str2int(journalType))
+        #        {
+        #            case JSJournalType_OK::PieceWorkBrigade :
+        #               document.insertValue(COMExcelDocument_RU::numToNameCell(6,#StartPosition + i),"Бригадные");
+        #               break;
+        #            case JSJournalType_OK::PieceWorkPersonal :
+        #                document.insertValue(COMExcelDocument_RU::numToNameCell(6,#StartPosition + i),"Индивидуальны");
+        #                break;
+        #            case JSJournalType_OK::Periodical :
+        #                document.insertValue(COMExcelDocument_RU::numToNameCell(6,#StartPosition + i),"Повременные");
+        #                break;
+        #           case JSJournalType_OK::Payment :
+        #                document.insertValue(COMExcelDocument_RU::numToNameCell(6,#StartPosition + i),"Доплата");
+        #                break;
+        #        }
+        #
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(7,#StartPosition + i),rateId);
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(8,#StartPosition + i),rateTable.RateAmount);
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(9,#StartPosition + i),JSRateTable_OK::find(rateId,endDate).RateAmount);
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(10,#StartPosition + i),hours);
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(11,#StartPosition + i),currency::amount(amount));
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(12,#StartPosition + i),brigadeFactId ? strFmt("%1",factTarif?prodTarif / factTarif * 100:0) : "");
+        #
+        #        document.insertRow(#StartPosition + i);
+        #        i++;
+        #        j++;
+        #
+        #    }
+        #        if (!paymId)
+        #        {
+        #            document.insertValue(COMExcelDocument_RU::numToNameCell(1,#StartPosition + i),"");
+        #            document.insertValue(COMExcelDocument_RU::numToNameCell(2,#StartPosition + i),"");
+        #            document.insertValue(COMExcelDocument_RU::numToNameCell(3,#StartPosition + i),"");
+        #            document.insertValue(COMExcelDocument_RU::numToNameCell(4,#StartPosition + i),"");
+        #            document.insertValue(COMExcelDocument_RU::numToNameCell(5,#StartPosition + i),"");
+        #            document.insertValue(COMExcelDocument_RU::numToNameCell(6,#StartPosition + i),"Итог");
+        #            document.insertValue(COMExcelDocument_RU::numToNameCell(7,#StartPosition + i),"");
+        #            document.insertValue(COMExcelDocument_RU::numToNameCell(8,#StartPosition + i),"");
+        #            document.insertValue(COMExcelDocument_RU::numToNameCell(9,#StartPosition + i),"");
+        #//+Nab OK003208 02.08.2016 KKB
+        #//          document.insertValue(COMExcelDocument_RU::numToNameCell(10,#StartPosition + i),"");
+        #            document.insertValue(COMExcelDocument_RU::numToNameCell(10,#StartPosition + i),totalHours);
+        #//-Nab OK003208 02.08.2016 KKB
+        #            document.insertValue(COMExcelDocument_RU::numToNameCell(11,#StartPosition + i),currency::amount(keySumTotal.key2Data(emplIdOld)));
+        #            document.insertValue(COMExcelDocument_RU::numToNameCell(12,#StartPosition + i),"");
+        #            document.insertRow(#StartPosition + i);
+        #            i++;
+        #        }
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(1,#StartPosition + i),"");
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(2,#StartPosition + i),"");
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(3,#StartPosition + i),"");
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(4,#StartPosition + i),"");
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(5,#StartPosition + i),"");
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(6,#StartPosition + i),"Итог всего");
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(7,#StartPosition + i),"");
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(8,#StartPosition + i),"");
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(9,#StartPosition + i),"");
+        #//+Nab OK003208 02.08.2016 KKB
+        #//      document.insertValue(COMExcelDocument_RU::numToNameCell(10,#StartPosition + i),"");
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(10,#StartPosition + i),sumTotalHours);
+        #//-Nab OK003208 02.08.2016 KKBsumTotalHours
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(11,#StartPosition + i),currency::amount(keySumTotal.total()));
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(12,#StartPosition + i),"");
+        #        document.insertRow(#StartPosition + i);
+        #
+        #        endLengthyOperation();
+        #        document.deleteRow(#StartPosition + i);
+        #}
+      ENDSOURCE
+      SOURCE #run
+        #public void run()
+        #{
+        #    super();
+        #
+        #    if (this.makeDocument())
+        #    {
+        #        this.printSheet1();
+        #    }
+        #    document.visible(true);
+        #    document.finalize();
+        #}
+      ENDSOURCE
+      SOURCE #unpack
+        #public boolean unpack(container _packedClass)
+        #{
+        #    Integer     version     = conPeek(_packedClass,1);
+        #
+        #    switch (version)
+        #    {
+        #        case #CurrentVersion:
+        #            [version, #CurrentList] = _packedClass;
+        #            break;
+        #        default :
+        #            return false;
+        #    }
+        #
+        #    return true;
+        #}
+      ENDSOURCE
+      SOURCE #main
+        #static void main(Args _args)
+        #{
+        #    JSChargeOnEmplReport_OK jsChargeOnEmplReport_OK = new JSChargeOnEmplReport_OK();
+        #    ;
+        #
+        #    if(jsChargeOnEmplReport_OK.prompt())
+        #        jsChargeOnEmplReport_OK.run();
+        #}
+      ENDSOURCE
+    ENDMETHODS
+  ENDCLASS
+
+***Element: END

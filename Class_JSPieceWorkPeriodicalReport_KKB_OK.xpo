@@ -1,0 +1,1034 @@
+﻿Exportfile for AOT version 1.0 or later
+Formatversion: 1
+
+***Element: CLS
+
+; Microsoft Dynamics AX Class: JSPieceWorkPeriodicalReport_KKB_OK выгружен
+; --------------------------------------------------------------------------------
+  CLSVERSION 1
+  
+  CLASS #JSPieceWorkPeriodicalReport_KKB_OK
+    PROPERTIES
+      Name                #JSPieceWorkPeriodicalReport_KKB_OK
+      Extends             #JSPieceWorkPeriodicalReport_OK
+      RunOn               #Called from
+    ENDPROPERTIES
+    
+    METHODS
+      Version: 3
+      SOURCE #CheckMasterApprove
+        #boolean CheckMasterApprove()
+        #{
+        #    JSTimeTrans_OK      timeTrans;
+        #    JSJournalTable_OK   journalTable;
+        #    str                 textInfo;
+        #    boolean             ret;
+        #    ;
+        #
+        #    while select journalTable
+        #        where journalTable.StartDate        >= startDate
+        #           && journalTable.StartDate        <= endDate
+        #           && journalTable.DepartmentId     == departmentId
+        #           && journalTable.PaymTypeId       == paymType
+        #           && journalTable.JournalNameId    == journalName
+        #           && journalTable.ExpensesCategory == expensesCategory
+        #//          && !journalTable.MasterCheck
+        #    {
+        #        if (textInfo)
+        #            textInfo = textInfo + "," +journalTable.JournalId;
+        #        else
+        #            textInfo = journalTable.JournalId;
+        #    }
+        #
+        #    if (textInfo)
+        #        ret = (BOX::yesNo(textInfo,DialogButton::No,"Существуют журналы не одобренные мастером") == DialogButton::yes);
+        #    else
+        #        ret = true;
+        #
+        #    return ret;
+        #}
+      ENDSOURCE
+      SOURCE #checkWorkHours
+        #//Nev 24.08.2011 KKB OK001817
+        #boolean checkWorkHours(JSEmplId_OK _emplId,StartDate    _startDate,JSHours_OK   _workHours)
+        #{
+        #    Map                     mapTime = new Map(Types::Container,Types::String);
+        #    MapIterator             mapIterator;
+        #    boolean                 ret = false;
+        #    real                    time;
+        #    ;
+        #
+        #    mapTime.insert([JSEmpl_OK::find(_emplId).TabNum,date2str(_startDate, 321, 2, 3, 2, 3, 4)],_workHours);
+        #
+        #    mapIterator = new MapIterator(mapTime);
+        #
+        #    while(mapIterator.more())
+        #    {
+        # //       time += jsSheetVerification.findTimeCheckPoint(mapIterator);
+        #        mapiterator.next();
+        #    }
+        #
+        #    if (time < _workHours)
+        #    {
+        #        ret = true;
+        #    }
+        #    return ret;
+        #
+        #}
+      ENDSOURCE
+      SOURCE #classDeclaration
+        #// jbos 15.02.2011 OK001244 [Разработка системы нарядов] -->
+        #class JSPieceWorkPeriodicalReport_KKB_OK extends JSPieceWorkPeriodicalReport_OK
+        #// jbos 15.02.2011 OK001244 [Разработка системы нарядов] <--
+        #{
+        #    JSSheetVerificationReport_OK    jsSheetVerification; //Nev 24.08.2011 KKB OK001817
+        #
+        #    #define.TemplateName("JSPieceWorkPeriodicalTemplate_KKBtemp.xls")
+        #
+        #    #define.CompanyName("CompanyName")
+        #    #define.WrkCtrGroup("WrkCtrGroup")
+        #    #define.PoolId("PoolId")
+        #    #define.WrkCtrId("WrkCtrId")
+        #    #define.Category("Category")
+        #    #define.Month("Month")
+        #    #define.Year("Year")
+        #    #define.MonthNumber("MonthNumber")
+        #    #define.ExternalSheetId("ExternalSheetNum")
+        #    #define.PoolNumber("PoolNumber")
+        #    #define.PaymType("PaymType")
+        #    #define.JournalName("JournalName")
+        #
+        #
+        #    #define.currentVersion(3)
+        #    #localMacro.currentList
+        #        startDate,
+        #        endDate,
+        #        paymType,
+        #        tabNum,
+        #        expensesCategory,
+        #        departmentId,
+        #        onlyApproved,
+        #        journalName
+        #    #endMacro
+        #
+        #}
+      ENDSOURCE
+      SOURCE #getCombinationData
+        #Set getCombinationData()
+        #{
+        #    Counter             counter;
+        #    Percent             percent;
+        #    JSHours_OK          data;
+        #    JSPaymTypeId_OK     paymTypeId;
+        #    JSSpecPositionId_OK specPosId;
+        #//+Nab 28.04.15 OK003256 KKB
+        #    str                 Disutility;
+        #//-Nab 28.04.15 OK003256 KKB
+        #    Set                 set = new Set(Types::String);
+        #    ;
+        #    for (counter = 1; counter <= keySum.numOfTrans(); counter++)
+        #    {
+        #//+Nab 28.04.15 OK003256 KKB
+        #       [
+        #            paymTypeId,
+        #            specPosId,
+        #            percent,
+        #            Disutility
+        #        ]  = keySum.index2Key(counter);
+        #/*     [
+        #            paymTypeId,
+        #            specPosId,
+        #            percent
+        #        ]  = keySum.index2Key(counter);
+        #      */
+        #//-Nab 28.04.15 OK003256 KKB
+        #        [
+        #            data
+        #        ] = keySum.index2Data(counter);
+        #
+        #        if (percent==0)
+        #        {
+        #            if (data == 0)
+        #                continue;
+        #            else
+        #                set.add(strfmt("%1-%2\n",
+        #                       paymTypeId,
+        #                       frac(data) ? strfmt("%1", data) : int2str(data)));
+        #        }
+        #        else
+        #        {
+        #//+Nab 28.04.15 OK003256 KKB
+        # set.add(strfmt("%1-%2-%3-%4 \% %5\n",
+        #                       paymTypeId,
+        #                       specPosId,
+        #                       frac(data) ? strfmt("%1", data) : int2str(data),
+        #                       frac(percent) ? strfmt("%1", percent) : int2str(percent),Disutility ? '-' + Disutility : '' ));
+        #        }
+        #    }
+        #/*     set.add(strfmt("%1-%2-%3-%4\%",
+        #                       paymTypeId,
+        #                       specPosId,
+        #                       frac(data) ? strfmt("%1", data) : int2str(data),
+        #                       frac(percent) ? strfmt("%1", percent) : int2str(percent)));
+        #        }
+        #    }
+        #*/
+        #//-Nab 28.04.15 OK003256 KKB
+        #    return set;
+        #}
+      ENDSOURCE
+      SOURCE #getFromDialog
+        #public boolean getFromDialog()
+        #{
+        #    boolean ret;
+        #    //JSJournalName_OK  jsJournalName;
+        #
+        #    ret = super();
+        #
+        #    /*if (journalName)
+        #    {
+        #        select * from jsJournalName
+        #            where jsJournalName.JournalNameId == journalName;
+        #
+        #        departmentId = jsJournalName.DepartmentId;
+        #    }*/
+        #    return ret;
+        #}
+      ENDSOURCE
+      SOURCE #getHoursStr
+        #str getHoursStr(JSHours_OK      _hours)
+        #{
+        #    str                     ret;
+        #    ;
+        #    if (!_hours)
+        #        return '';
+        #
+        #    if (!frac(_hours))
+        #        ret = int2str(_hours);
+        #    else
+        #        ret = strfmt("%1", _hours);
+        #
+        #     return ret;
+        #}
+      ENDSOURCE
+      SOURCE #getPaymSet
+        #Set getPaymSet(Common       _common,
+        #               TransDate    _transDate)
+        #{
+        #    Set                             set = new Set(Types::String);
+        #    JSCalcTransTypeParameters_OK    transParameters;
+        #    JSTimeTrans_OK                  timeTrans;
+        #    JSCombinationTrans_OK           combTrans;
+        #    SetIterator                     si;
+        #    FieldId                         fieldIdFlag, fieldIdValue;
+        #    JSCalcTransType_OK              transType;
+        #    JSPaymTypeId_OK                 paymTypeId;
+        #    real                            workHours;
+        #    anyType                         fieldValue;
+        #//+Nab 28.04.15 OK003256 KKB
+        #    str                             Disutility;
+        #//-Nab 28.04.15 OK003256 KKB
+        #    ;
+        #    if (_common.TableId == tablenum(JSCombinationTrans_OK))
+        #    {
+        #        combTrans.data(_common);
+        #        select firstonly timeTrans
+        #            where   timeTrans.ExecutorId == combTrans.ExecutorId
+        #                &&  timeTrans.JSEmplId   == combTrans.JSEmplId;
+        #
+        #        transParameters = JSCalcTransTypeParameters_OK::find(JSCalcTransType_OK::CombinationBonus, _transDate);
+        #//+Nab 28.04.15 OK003256 KKB
+        #                            keySum.updateNow([
+        #                            transParameters.PaymTypeId,
+        #                            combTrans.RateId,
+        #                            timeTrans.CombinationBonusPercent,
+        #                            Disutility
+        #                         ],
+        #                         [
+        #                            combTrans.Hours
+        #                         ]);
+        #/*                          keySum.updateNow([
+        #                            transParameters.PaymTypeId,
+        #                            combTrans.RateId,
+        #                            timeTrans.CombinationBonusPercent
+        #                         ],
+        #                         [
+        #                            combTrans.Hours
+        #                         ]);
+        #*/
+        #//-Nab 28.04.15 OK003256 KKB
+        #        /*
+        #        set.add(strfmt("%1-%2-%3-%4\%",
+        #                       transParameters.PaymTypeId,
+        #                       combTrans.SpecPositionId,
+        #                       frac(combTrans.Hours) ? strfmt("%1", combTrans.Hours) : int2str(combTrans.Hours),
+        #                       frac(timeTrans.CombinationBonusPercent) ? strfmt("%1", timeTrans.CombinationBonusPercent) : int2str(timeTrans.CombinationBonusPercent)));
+        #        */
+        #        return set;
+        #    }
+        #
+        #    timeTrans.data(_common);
+        #
+        #    si = new SetIterator(addPaymSet);
+        #    while (si.more())
+        #    {
+        #        [
+        #            fieldIdFlag,
+        #            fieldIdValue,
+        #            transType,
+        #            Disutility
+        #        ] = si.value();
+        #
+        #        if (timeTrans.(fieldIdFlag))
+        #        {
+        #            paymTypeId = JSCalcTransTypeCorrespondence_OK::findPaymTypeId(transType,
+        #                                                                          timeTrans.journalTable().JournalType,
+        #                                                                          timeTrans.journalTable().PaymTypeId,
+        #                                                                          timeTrans.journalTable().StartDate);
+        #
+        #
+        #                switch (fieldIdFlag)
+        #                {
+        #                    case (fieldnum(JSTimeTrans_OK, TravellingBonusPercent)):
+        #                        workHours = timeTrans.WorkHours - timeTrans.WrkStopHours;
+        #                        fieldValue = timeTrans.(fieldIdValue);
+        #//+Nab 28.04.15 OK003256 KKB
+        #                        Disutility = '';
+        #//-Nab 28.04.15 OK003256 KKB
+        #                        break;
+        #                    case (fieldnum(JSTimeTrans_OK, CleaningBonusPercent)):
+        #                        workHours = timeTrans.WorkHours - timeTrans.WrkStopHours;
+        #                        fieldValue = strFmt("%1",timeTrans.(fieldIdValue));
+        #//+Nab 28.04.15 OK003256 KKB
+        #                        Disutility = '';
+        #//-Nab 28.04.15 OK003256 KKB
+        #                        break;
+        #                    case (fieldnum(JSTimeTrans_OK, PayCategoryDiff)):
+        #                        workHours = timeTrans.WorkHours - timeTrans.WrkStopHours - timeTrans.OverTimeHours - timeTrans.HolidayHours;
+        #                        fieldValue = "";
+        #//+Nab 28.04.15 OK003256 KKB
+        #                        Disutility = '';
+        #//-Nab 28.04.15 OK003256 KKB
+        #                        break;
+        #                    case (fieldnum(JSTimeTrans_OK, PayExtension)):
+        #//Nab fullextension
+        # //                       workHours = timeTrans.WorkHours - timeTrans.WrkStopHours - timeTrans.OverTimeHours - timeTrans.HolidayHours;
+        #                        workHours = timeTrans.PayExtensionFull ? (timeTrans.WorkHours - timeTrans.WrkStopHours) :
+        #                                                                 (timeTrans.WorkHours - timeTrans.WrkStopHours - timeTrans.OverTimeHours - timeTrans.HolidayHours);
+        # //fullextension
+        #                        fieldValue = strFmt("%1",timeTrans.(fieldIdValue));
+        #//+Nab 28.04.15 OK003256 KKB
+        #                        Disutility = '';
+        #//-Nab 28.04.15 OK003256 KKB
+        #                        break;
+        #                    case (fieldnum(JSTimeTrans_OK, DoubleHours)):
+        #                        workHours = timeTrans.DoubleHours;
+        #                        fieldValue = "";
+        #//+Nab 28.04.15 OK003256 KKB
+        #                        Disutility = '';
+        #//-Nab 28.04.15 OK003256 KKB
+        #                        break;
+        #                    case (fieldnum(JSTimeTrans_OK, WinterBonusPercent)):
+        #                        workHours = timeTrans.WinterHours;
+        #                        fieldValue = timeTrans.(fieldIdValue);
+        #//+Nab 28.04.15 OK003256 KKB
+        #                        Disutility = '';
+        #//-Nab 28.04.15 OK003256 KKB
+        #                        break;
+        #                    case (fieldnum(JSTimeTrans_OK, WrkConditionsPercent)):
+        #                        workHours = timeTrans.WorkHours - timeTrans.WrkStopHours;
+        #                        fieldValue = timeTrans.(fieldIdValue);
+        #//+Nab 28.04.15 OK003256 KKB
+        #                        Disutility = enum2str(timeTrans.HarmfulnessId);
+        #//-Nab 28.04.15 OK003256 KKB
+        #                        break;
+        #                    default :
+        #                        workHours = timeTrans.WorkHours;
+        #                        fieldValue = strFmt("%1",timeTrans.(fieldIdValue));
+        #//+Nab 28.04.15 OK003256 KKB
+        #                        Disutility = '';
+        #//-Nab 28.04.15 OK003256 KKB
+        #                        break;
+        #                }
+        #
+        #
+        #            if (paymTypeId != paymType)
+        #            {
+        #                keySum.updateNow([
+        #                            paymTypeId,
+        #                            '',
+        #                            fieldValue
+        #//+Nab 28.04.15 OK003256 KKB
+        #                            ,Disutility
+        #//-Nab 28.04.15 OK003256 KKB
+        #                         ],
+        #                         [
+        #                            workHours
+        #                         ]);
+        #            }
+        #        }
+        #
+        #        si.next();
+        #    }
+        #    /*
+        #    if (timeTrans.PayExtension)
+        #    {
+        #        transParameters = JSCalcTransTypeParameters_OK::find(JSCalcTransType_OK::ExtensionBonus, _transDate);
+        #        set.add(strfmt("%1-%2\%", transParameters.PaymTypeId, frac(timeTrans.ExtensionBonusPercent) ?
+        #                                                              strfmt("%1", timeTrans.ExtensionBonusPercent) :
+        #                                                              int2str(timeTrans.ExtensionBonusPercent)));
+        #    }
+        #
+        #    if (timeTrans.WinterHours)
+        #    {
+        #        transParameters = JSCalcTransTypeParameters_OK::find(JSCalcTransType_OK::WinterWork, _transDate);
+        #        set.add(strfmt("%1-%2\%", transParameters.PaymTypeId, 0));
+        #    }
+        #
+        #    if (timeTrans.HolidayHours)
+        #    {
+        #        transParameters = JSCalcTransTypeParameters_OK::find(JSCalcTransType_OK::HolidayBonus, _transDate);
+        #        set.add(strfmt("%1-%2\%", transParameters.PaymTypeId, 0));
+        #    }
+        #
+        #    if (timeTrans.OverTimeHours)
+        #    {
+        #        transParameters = JSCalcTransTypeParameters_OK::find(JSCalcTransType_OK::OverTimeBonus, _transDate);
+        #        set.add(strfmt("%1-%2\%", transParameters.PaymTypeId, 0));
+        #    }
+        #
+        #    if (timeTrans.IsTaskMaster)
+        #    {
+        #        transParameters = JSCalcTransTypeParameters_OK::find(JSCalcTransType_OK::TaskmasterBonus, _transDate);
+        #        set.add(strfmt("%1-%2\%", transParameters.PaymTypeId, frac(timeTrans.TaskmasterBonusPercent) ?
+        #                                                              strfmt("%1", timeTrans.TaskmasterBonusPercent) :
+        #                                                              int2str(timeTrans.TaskmasterBonusPercent)));
+        #    }
+        #
+        #    if (timeTrans.DoubleHours)
+        #    {
+        #        transParameters = JSCalcTransTypeParameters_OK::find(JSCalcTransType_OK::DoubleRateBonus, _transDate);
+        #        set.add(strfmt("%1-%2\%", transParameters.PaymTypeId, 0));
+        #    }
+        #
+        #    if (timeTrans.CleaningBonusPercent)
+        #    {
+        #        transParameters = JSCalcTransTypeParameters_OK::find(JSCalcTransType_OK::CleaningBonus, _transDate);
+        #        set.add(strfmt("%1-%2\%", transParameters.PaymTypeId, frac(timeTrans.CleaningBonusPercent) ?
+        #                                                              strfmt("%1", timeTrans.CleaningBonusPercent) :
+        #                                                              int2str(timeTrans.CleaningBonusPercent)));
+        #    }
+        #
+        #    if (timeTrans.TravellingBonusPercent)
+        #    {
+        #        transParameters = JSCalcTransTypeParameters_OK::find(JSCalcTransType_OK::TravellingBonus, _transDate);
+        #        set.add(strfmt("%1-%2\%", transParameters.PaymTypeId, frac(timeTrans.TravellingBonusPercent) ?
+        #                                                              strfmt("%1", timeTrans.TravellingBonusPercent) :
+        #                                                              int2str(timeTrans.TravellingBonusPercent)));
+        #    }
+        #    */
+        #    return set;
+        #}
+      ENDSOURCE
+      SOURCE #initAddPaymSet
+        #void initAddPaymSet()
+        #{
+        #    ;
+        #    addPaymSet = new Set(Types::Container);
+        #    addPaymSet.add([fieldnum(JSTimeTrans_OK, PayExtension), fieldnum(JSTimeTrans_OK, ExtensionBonusPercent), JSCalcTransType_OK::ExtensionBonus]);
+        #    addPaymSet.add([fieldnum(JSTimeTrans_OK, WinterBonusPercent), fieldnum(JSTimeTrans_OK, WinterBonusPercent), JSCalcTransType_OK::WinterWork]);
+        #   // addPaymSet.add([fieldnum(JSTimeTrans_OK, HolidayHours), fieldnum(JSTimeTrans_OK, HolidayHours), JSCalcTransType_OK::HolidayBonus]);
+        #   // addPaymSet.add([fieldnum(JSTimeTrans_OK, OverTimeHours), fieldnum(JSTimeTrans_OK, OverTimeHours), JSCalcTransType_OK::OverTimeBonus]);
+        #    addPaymSet.add([fieldnum(JSTimeTrans_OK, IsTaskMaster), fieldnum(JSTimeTrans_OK, TaskMasterBonusPercent), JSCalcTransType_OK::TaskmasterBonus]);
+        #   // addPaymSet.add([fieldnum(JSTimeTrans_OK, DoubleHours), 0, JSCalcTransType_OK::DoubleRateBonus]);
+        #    addPaymSet.add([fieldnum(JSTimeTrans_OK, CleaningBonusPercent), fieldnum(JSTimeTrans_OK, CleaningBonusPercent), JSCalcTransType_OK::CleaningBonus]);
+        #    addPaymSet.add([fieldnum(JSTimeTrans_OK, TravellingBonusPercent), fieldnum(JSTimeTrans_OK, TravellingBonusPercent), JSCalcTransType_OK::TravellingBonus]);
+        #    addPaymSet.add([fieldnum(JSTimeTrans_OK, WrkConditionsPercent), fieldnum(JSTimeTrans_OK, WrkConditionsPercent), JSCalcTransType_OK::WrkConditionsBonus]);
+        #    addPaymSet.add([fieldnum(JSTimeTrans_OK, PayCategoryDiff), fieldnum(JSTimeTrans_OK, PayCategoryDiff), JSCalcTransType_OK::CategoryDiff]);
+        #    addPaymSet.add([fieldnum(JSTimeTrans_OK, DoubleHours), fieldnum(JSTimeTrans_OK, DoubleHours), JSCalcTransType_OK::DoubleRateBonus]);
+        #}
+      ENDSOURCE
+      SOURCE #makeDocument
+        #private boolean makeDocument()
+        #{
+        #    ;
+        #    document = new ComExcelDocument_RU();
+        #
+        #    if (!document.newFile(templateFolderJOBSHEET_OK() + #TemplateName, false))
+        #        return checkFailed(strfmt("@SYS60367", templateFolderJOBSHEET_OK() + #TemplateName));
+        #
+        #    return true;
+        #}
+      ENDSOURCE
+      SOURCE #pack
+        #public container pack()
+        #{
+        #    return [#CurrentVersion, #CurrentList];
+        #}
+      ENDSOURCE
+      SOURCE #printSheet1
+        #void printSheet1()
+        #{
+        #    JSDepartmentTable_OK    department = JSDepartmentTable_OK::find(departmentId);
+        #    MonthsOfYear            mth;
+        #
+        #    document.insertValue(#CompanyName,   CompanyInfo::find().Name, curWorkSheetNum);
+        #    document.insertValue(#WrkCtrGroup,          department.Name, curWorkSheetNum);
+        #    document.insertValue(#PoolId,               JSJournalName_OK::find(journalName).Description, curWorkSheetNum);
+        #    //document.insertValue(#WrkCtrId,             department.DepartmentId, curWorkSheetNum);
+        #    document.insertValue(#Category,             int2str(expensesCategory), curWorkSheetNum);
+        #    mth = mthofyr(startDate);
+        #    document.insertValue(#Month,                strfmt("%1", mth, curWorkSheetNum));
+        #    document.insertValue(#Year,                 year(startDate), curWorkSheetNum);
+        #    document.insertValue(#MonthNumber,          mthOfYr(startDate), curWorkSheetNum);
+        #    document.insertValue(#PoolNumber,           department.ExternalAccount, curWorkSheetNum);
+        #    document.insertValue(#PaymType,             paymType, curWorkSheetNum);
+        #
+        #    if (JSCalcTable_OK::find(calcId).ExternalSheetNum)
+        #        document.insertValue(#ExternalSheetId,  str2int(JSCalcTable_OK::find(calcId).ExternalSheetId), curWorkSheetNum);
+        #
+        #}
+      ENDSOURCE
+      SOURCE #printSheet2
+        #void printSheet2()
+        #{
+        #    ArrayExtend_RU              hoursArray, nightArray, overTimeHoursArray, paymArray,holidayHoursArray,wrkStopHoursArray,combinationHoursArray;
+        #    JSJournalExecutor_OK        executor, executorSearch;
+        #    JSEmplId_OK                 emplId;
+        #    JSEmplMove_OK               emplMove;
+        #    Container                   emplCont;
+        #    Map                         hoursMap;
+        #    Map                         nightHoursMap;
+        #    Map                         overTimeHoursMap;
+        #    Map                         holidayHoursMap;
+        #    Map                         wrkStopHoursMap;
+        #    Map                         combinationHoursMap;
+        #    JSJournalTable_OK           journalTable, journalTbl;
+        #    JSTimeTrans_OK              timeTrans, timeTransSearch;
+        #    JSCombinationTrans_OK       combinationTrans;
+        #    Counter                     i, counter, line, emplLine, totalLine, bonusLine, specLine, numLine, amountLine, paymLine, factLine,planHoursCount;
+        #    Hours                       sumCombinationHours,sumTotalHours, planHours,sumNightHours,sumOverTimeHours,sumHolidayHours,sumWrkStopHours,doubleHours,sumDoubleHours;
+        #    Percent                     bonusPercent;
+        #    JSSpecPositionId_OK         specPosition;
+        #    JSRateAmount_OK             emplRateAmount;
+        #    Set                         paymSet;
+        #    str                         paymDesciption;
+        #    SetIterator                 setIterator;
+        #    JSEmpl_OK                   empl;
+        #    TimeHour24                  time;
+        #    StartDate                   stDate;
+        #    EndDate                     eDate;
+        #    WorkCalendarDateLine        calendarDateLine;
+        #    JSRateCategory_OK           rateCategory;
+        #//+Nev 24.08.2011 KKB OK001817
+        #    Set                         markSet = new Set(Types::Integer);
+        #    SetIterator                 setIteratorMark;
+        #    COM                         cell;
+        #    COM                         range;
+        #//-Nev 24.08.2011 KKB OK001817
+        #//+Nab 23.11.2020 Доработка для Коломны
+        #    JSRateId_OK                 rateId;
+        #//-Nab 23.11.2020 Доработка для Коломны
+        #    #TimeConstants
+        #    #define.StartCol(4)
+        #    #define.StartRaw(4)
+        #    #define.MaxDays(31)
+        #    #define.CopyRaw(4)
+        #    #define.CopyRaw2(6)
+        #    #define.CopyRaw3(9)
+        #    #define.LinesInTemplate(1)
+        #    #define.EmplCol(1)
+        #    #define.TotalHoursCol(35)
+        #    #define.PlanHoursCol(36)
+        #    #define.BonusCol(38)
+        #    #define.SpecCol(39)
+        #    #define.TabNumCol(2)
+        #    #define.RateAmountCol(40)
+        #    #define.PaymCol(41)
+        #    #define.FactCol(36)
+        #//+Nab 23.11.2020 Доработка для Коломны
+        #    #define.MonthRaw(1)
+        #    #define.MonthCol(4)
+        #    #define.DepCol(3)
+        #//-Nab 23.11.2020 Доработка для Коломны
+        #    ;
+        #//+Nev 24.08.2011 KKB OK001817
+        #//   jsSheetVerification = new JSSheetVerificationReport_OK();
+        #
+        #//   jsSheetVerification.connection();
+        #//-Nev 24.08.2011 KKB OK001817
+        #    document.activateWorksheet(curWorkSheetNum);
+        #//+Nab 23.11.2020 Доработка для Коломны
+        #    document.insertValue(COMExcelDocument_RU::numToNameCell(#MonthCol, #MonthRaw ), mthName(mthofYr(startDate)),curWorkSheetNum);
+        #    document.insertValue(COMExcelDocument_RU::numToNameCell(#DepCol,   #MonthRaw ), JSDepartmentTable_OK::find(departmentId).Name,curWorkSheetNum);
+        #//-Nab 23.11.2020 Доработка для Коломны
+        #    emplId = JSEmpl_OK::findByTabNum(tabNum, endDate).JSEmplId;
+        #
+        #    while select count(RecId) from executor
+        #        group by EmplId
+        #        where (!emplId
+        #            || executor.EmplId      == emplId)
+        #            && (!filterJournalId
+        #            ||  executor.JournalId  == filterJournalId)
+        #            && executor.JournalType == JSJournalType_OK::Periodical
+        #            && (!calcId
+        #            || executor.CalcId      == calcId)
+        #    join RateId from timeTrans
+        #        group by RateId,planHours
+        #        where   timeTrans.ExecutorId == executor.ExecutorId
+        #    exists join journalTable
+        #        where  journalTable.JournalId        == executor.JournalId
+        #            && journalTable.StartDate        >= startDate
+        #            && journalTable.StartDate        <= endDate
+        #            && journalTable.DepartmentId     == departmentId
+        #            && journalTable.PaymTypeId       == paymType
+        #            && journalTable.JournalNameId    == journalName
+        #            && journalTable.ExpensesCategory == expensesCategory
+        #            && (!onlyApproved
+        #            || journalTable.Status           == JSJournalStatus_OK::Approved)
+        #            && (!onlyCalculated
+        #            || journalTable.Status           == JSJournalStatus_OK::Calculated)
+        #
+        #    {
+        #        counter++;
+        #    }
+        #
+        #    document.insertRows(#CopyRaw, #CopyRaw3, curWorkSheetNum, #CopyRaw2, counter - #LinesInTemplate, curWorkSheetNum);
+        #
+        #    while select TabNum, emplId from executor
+        #        group by TabNum, emplId
+        #        where (!emplId
+        #            || executor.EmplId      == emplId)
+        #            && (!filterJournalId
+        #            ||  executor.JournalId  == filterJournalId)
+        #            && executor.JournalType == JSJournalType_OK::Periodical
+        #            && (!calcId
+        #            || executor.CalcId      == calcId)
+        #    join RateId,planHours from timeTransSearch
+        #        group by RateId,planHours
+        #        where   timeTransSearch.ExecutorId == executor.ExecutorId
+        #    exists join journalTable
+        #        where  journalTable.JournalId        == executor.JournalId
+        #            && journalTable.StartDate        >= startDate
+        #            && journalTable.StartDate        <= endDate
+        #            && journalTable.DepartmentId     == departmentId
+        #            && journalTable.PaymTypeId       == paymType
+        #            && journalTable.JournalNameId    == journalName
+        #            && journalTable.ExpensesCategory == expensesCategory
+        #            && (!onlyApproved
+        #            || journalTable.Status           == JSJournalStatus_OK::Approved)
+        #            && (!onlyCalculated
+        #            || journalTable.Status           == JSJournalStatus_OK::Calculated)
+        #    {
+        #        hoursMap        = new Map(Types::Integer, Types::String);
+        #        nightHoursMap   = new Map(Types::Integer, Types::String);
+        #        overTimeHoursMap    = new Map(Types::Integer, Types::String);
+        #        holidayHoursMap = new Map(Types::Integer, Types::String);
+        #        wrkStopHoursMap = new Map(Types::Integer, Types::String);
+        #        combinationHoursMap = new Map(Types::Integer, Types::String);
+        #        paymDesciption  = '';
+        #
+        #
+        #        sumCombinationHours = 0;
+        #        sumTotalHours = 0;
+        #        sumNightHours = 0;
+        #        sumOverTimeHours = 0;
+        #        sumHolidayHours = 0;
+        #        sumDoubleHours  = 0;
+        #        sumWrkStopHours = 0;
+        #        time          = 0;
+        #        planHoursCount = 0;
+        #        bonusPercent = 0;
+        #        planHours = 0;
+        #
+        #        hoursArray      = new ArrayExtend_RU(Types::Class);
+        #        nightArray      = new ArrayExtend_RU(Types::Class);
+        #        overTimeHoursArray  = new ArrayExtend_RU(Types::Class);
+        #        holidayHoursArray   = new ArrayExtend_RU(Types::Class);
+        #        wrkStopHoursArray   = new ArrayExtend_RU(Types::Class);
+        #        combinationHoursArray = new ArrayExtend_RU(Types::Class);
+        #        paymSet         = new Set(Types::String);
+        #        paymArray       = new ArrayExtend_RU(Types::Class);
+        #//+Nab 28.04.15 OK003256 KKB
+        #//     keySum          = new KeySum_OK(3, 1);
+        #       keySum          = new KeySum_OK(4, 1);
+        #//-Nab 28.04.15 OK003256 KKB
+        #        while select timeTrans
+        #            where   timeTrans.JSEmplId  == executor.EmplId
+        #                &&  timeTrans.RateId    == timeTransSearch.RateId
+        #                &&  timeTrans.PlanHours == timeTransSearch.PlanHours
+        #        join executorSearch
+        #            where  executorSearch.ExecutorId  == timeTrans.ExecutorId
+        #                && (!filterJournalId
+        #                ||  executorSearch.JournalId  == filterJournalId)
+        #                && executorSearch.JournalType == JSJournalType_OK::Periodical
+        #                && (!calcId
+        #                || executorSearch.CalcId      == calcId)
+        #        join journalTbl
+        #            where journalTbl.JournalId         == executorSearch.JournalId
+        #                && journalTbl.StartDate        >= startDate
+        #                && journalTbl.StartDate        <= endDate
+        #                && journalTbl.DepartmentId     == departmentId
+        #                && journalTbl.PaymTypeId       == paymType
+        #                && journalTbl.JournalNameId    == journalName
+        #                && journalTbl.ExpensesCategory == expensesCategory
+        #                && (!onlyApproved
+        #                || journalTbl.Status         == JSJournalStatus_OK::Approved)
+        #                && (!onlyCalculated
+        #                || journalTbl.Status           == JSJournalStatus_OK::Calculated)
+        #        {
+        #
+        #
+        #            if (!hoursMap.exists(dayOfmth(journalTbl.StartDate)))
+        #                hoursMap.insert(dayOfmth(journalTbl.StartDate), timeTrans.WorkHours);
+        #            else
+        #                hoursMap.insert(dayOfmth(journalTbl.StartDate), str2num(hoursMap.lookup(dayOfmth(journalTbl.StartDate)))+timeTrans.WorkHours);
+        #
+        #            if (!nightHoursMap.exists(dayOfmth(journalTbl.StartDate)))
+        #                nightHoursMap.insert(dayOfmth(journalTbl.StartDate), timeTrans.NightHours);
+        #            else
+        #                nightHoursMap.insert(dayOfmth(journalTbl.StartDate), str2num(nightHoursMap.lookup(dayOfmth(journalTbl.StartDate)))+timeTrans.NightHours);
+        #
+        #            if (!overTimeHoursMap.exists(dayOfmth(journalTbl.StartDate)))
+        #                overTimeHoursMap.insert(dayOfmth(journalTbl.StartDate), timeTrans.OverTimeHours);
+        #            else
+        #                overTimeHoursMap.insert(dayOfmth(journalTbl.StartDate), str2num(overTimeHoursMap.lookup(dayOfmth(journalTbl.StartDate)))+timeTrans.OverTimeHours);
+        #
+        #            if (!holidayHoursMap.exists(dayOfmth(journalTbl.StartDate)))
+        #                holidayHoursMap.insert(dayOfmth(journalTbl.StartDate), (timeTrans.HolidayHours));
+        #            else
+        #                holidayHoursMap.insert(dayOfmth(journalTbl.StartDate), str2num(holidayHoursMap.lookup(dayOfmth(journalTbl.StartDate)))+(timeTrans.HolidayHours));
+        #
+        #            if (!wrkStopHoursMap.exists(dayOfmth(journalTbl.StartDate)))
+        #                wrkStopHoursMap.insert(dayOfmth(journalTbl.StartDate), timeTrans.WrkStopHours);
+        #            else
+        #                wrkStopHoursMap.insert(dayOfmth(journalTbl.StartDate), str2num(wrkStopHoursMap.lookup(dayOfmth(journalTbl.StartDate)))+timeTrans.WrkStopHours);
+        #
+        #
+        #            sumTotalHours  += timeTrans.WorkHours;
+        #            sumNightHours  += timeTrans.NightHours;
+        #            sumOverTimeHours += timeTrans.OverTimeHours;
+        #            sumHolidayHours += timeTrans.HolidayHours;
+        #            sumDoubleHours  += timeTrans.DoubleHours;
+        #            sumWrkStopHours += timeTrans.WrkStopHours;
+        #
+        #            bonusPercent   += timeTrans.MainBonusPercent;
+        #            specPosition    = timeTrans.SpecPositionId;
+        #            rateCategory    = timeTrans.RateCategory;
+        #//+Nab 23.11.2020 Доработка для Коломны
+        #            rateId          = timeTrans.RateId;
+        #//-Nab 23.11.2020 Доработка для Коломны
+        #
+        #            emplRateAmount  = JSRateTable_OK::find(timeTrans.RateId, journalTbl.StartDate).RateAmount;
+        #            planHours       += timeTrans.PlanHours;
+        #            planHoursCount++;
+        #
+        #            paymSet = Set::union(paymSet, this.getPaymSet(timeTrans, journalTbl.StartDate));
+        #
+        #            empl        = JSEmpl_OK::find(executor.EmplId);
+        #            emplMove    = JSEmplMove_OK::find(empl.JSEmplId, journalTbl.StartDate);
+        #
+        #        }
+        #
+        #        planHours = planHours/planHoursCount;
+        #        bonusPercent = bonusPercent/planHoursCount;
+        #
+        #        while select combinationTrans
+        #            where  combinationTrans.JSEmplId  == executor.EmplId
+        #        join executorSearch
+        #            where  executorSearch.ExecutorId  == combinationTrans.ExecutorId
+        #                && (!filterJournalId
+        #                ||  executorSearch.JournalId  == filterJournalId)
+        #                && executorSearch.JournalType == JSJournalType_OK::Periodical
+        #                && (!calcId
+        #                || executorSearch.CalcId      == calcId)
+        #        join journalTbl
+        #            where journalTbl.JournalId      == executorSearch.JournalId
+        #                && journalTbl.StartDate        >= startDate
+        #                && journalTbl.StartDate        <= endDate
+        #                && journalTbl.DepartmentId     == departmentId
+        #                && journalTbl.PaymTypeId       == paymType
+        #                && journalTbl.JournalNameId    == journalName
+        #                && journalTbl.ExpensesCategory == expensesCategory
+        #                && (!onlyApproved
+        #                || journalTbl.Status           == JSJournalStatus_OK::Approved)
+        #                && (!onlyCalculated
+        #                || journalTbl.Status           == JSJournalStatus_OK::Calculated)
+        #        exists join timeTrans
+        #            where   timeTrans.ExecutorId == combinationTrans.ExecutorId
+        #                &&  timeTrans.JSEmplId   == combinationTrans.JSEmplId
+        #                &&  timeTrans.RateId     == timeTransSearch.RateId
+        #                &&  timeTrans.PlanHours == timeTransSearch.PlanHours
+        #        {
+        #            paymSet = Set::union(paymSet, this.getPaymSet(combinationTrans, journalTbl.StartDate));
+        #
+        #            if (!combinationHoursMap.exists(dayOfmth(journalTbl.StartDate)))
+        #                combinationHoursMap.insert(dayOfmth(journalTbl.StartDate), combinationTrans.Hours);
+        #            else
+        #                combinationHoursMap.insert(dayOfmth(journalTbl.StartDate), str2num(combinationHoursMap.lookup(dayOfmth(journalTbl.StartDate)))+combinationTrans.Hours);
+        #
+        #            sumCombinationHours += combinationTrans.Hours;
+        #        }
+        #
+        #        paymSet = Set::union(paymSet, this.getCombinationData());
+        #
+        #        markSet         = new Set(Types::Integer);
+        #
+        #        for (i = 1; i <= #MaxDays; i++)
+        #        {
+        #            //+Nev 24.08.2011 KKB OK001817
+        #            if (hoursMap.exists(i))
+        #            {
+        #                if (this.checkWorkHours(executor.EmplId,str2Date(int2str(i)+'/'+int2str(mthOfYr(startDate))+'/'+int2str(year(startDate)),123),hoursMap.lookup(i)))
+        #                    markSet.add(i);
+        #            }
+        #            //-Nev 24.08.2011 KKB OK001817
+        #            hoursArray.addElement(COMVariant::createFromStr(hoursMap.exists(i) ? this.getHoursStr(hoursMap.lookup(i)) : ''));
+        #            nightArray.addElement(COMVariant::createFromStr(nightHoursMap.exists(i) ? this.getHoursStr(nightHoursMap.lookup(i)) : ''));
+        #            overTimeHoursArray.addElement(COMVariant::createFromStr(overTimeHoursMap.exists(i) ? this.getHoursStr(overTimeHoursMap.lookup(i)) : ''));
+        #            holidayHoursArray.addElement(COMVariant::createFromStr(holidayHoursMap.exists(i) ? this.getHoursStr(holidayHoursMap.lookup(i)) : ''));
+        #            wrkStopHoursArray.addElement(COMVariant::createFromStr(wrkStopHoursMap.exists(i) ? this.getHoursStr(wrkStopHoursMap.lookup(i)) : ''));
+        #            combinationHoursArray.addElement(COMVariant::createFromStr(combinationHoursMap.exists(i) ? this.getHoursStr(combinationHoursMap.lookup(i)) : ''));
+        #
+        #        }
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(#EmplCol, #StartRaw + emplLine), JSEmpl_OK::find(executor.EmplId).Name, curWorkSheetNum);
+        #
+        #        emplLine += 6;
+        #
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(#TotalHoursCol, #StartRaw + totalLine), this.getHoursStr(sumTotalHours), curWorkSheetNum);
+        #        totalLine += 1;
+        #
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(#TotalHoursCol, #StartRaw + totalLine), sumOverTimeHours ? this.getHoursStr(sumOverTimeHours) : '', curWorkSheetNum);
+        #        totalLine += 1;
+        #
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(#TotalHoursCol, #StartRaw + totalLine), sumNightHours ? this.getHoursStr(sumNightHours) : '' , curWorkSheetNum);
+        #        totalLine += 1;
+        #
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(#TotalHoursCol, #StartRaw + totalLine), sumHolidayHours ? this.getHoursStr(sumHolidayHours) : '' , curWorkSheetNum);
+        #        totalLine += 1;
+        #
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(#TotalHoursCol, #StartRaw + totalLine), sumWrkStopHours ? this.getHoursStr(sumWrkStopHours) : '' , curWorkSheetNum);
+        #        totalLine += 1;
+        #
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(#TotalHoursCol, #StartRaw + totalLine), sumCombinationHours ? this.getHoursStr(sumCombinationHours) : '' , curWorkSheetNum);
+        #        totalLine += 1;
+        #
+        #
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(#TotalHoursCol+1, #StartRaw + totalLine - 6), this.getHoursStr(sumTotalHours - sumOverTimeHours - sumHolidayHours - sumWrkStopHours) , curWorkSheetNum);
+        #
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(#BonusCol, #StartRaw + bonusLine), bonusPercent, curWorkSheetNum);
+        #        bonusLine +=6;
+        #//+Nab 23.11.2020 Доработка для Коломны
+        #//       document.insertValue(COMExcelDocument_RU::numToNameCell(#SpecCol, #StartRaw + specLine), strfmt('%1 - %2', specPosition, rateCategory), curWorkSheetNum);
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(#SpecCol, #StartRaw + specLine), strfmt('%1 - %2 - %3', specPosition, rateCategory, rateId), curWorkSheetNum);
+        #//+Nab 23.11.2020 Доработка для Коломны
+        #        specLine +=6;
+        #
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(#TabNumCol, #StartRaw + numLine), executor.TabNum, curWorkSheetNum);
+        #        numLine +=6;
+        #
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(#RateAmountCol, #StartRaw + amountLine), emplRateAmount, curWorkSheetNum);
+        #        amountLine +=6;
+        #
+        #        line++;
+        #        document.insertValue(strfmt("%1:%2",
+        #                                    COMExcelDocument_RU::numToNameCell(#StartCol, #StartRaw + line - 1),
+        #                                    COMExcelDocument_RU::numToNameCell(#StartCol + hoursArray.lastIndex() - 1, #StartRaw + line - 1)), hoursArray, curWorkSheetNum);
+        #
+        #        line++;
+        #        document.insertValue(strfmt("%1:%2",
+        #                                    COMExcelDocument_RU::numToNameCell(#StartCol, #StartRaw + line - 1),
+        #                                    COMExcelDocument_RU::numToNameCell(#StartCol + overTimeHoursArray.lastIndex() - 1, #StartRaw + line - 1)), overTimeHoursArray, curWorkSheetNum);
+        #
+        #        line++;
+        #        document.insertValue(strfmt("%1:%2",
+        #                                    COMExcelDocument_RU::numToNameCell(#StartCol, #StartRaw + line - 1),
+        #                                    COMExcelDocument_RU::numToNameCell(#StartCol + nightArray.lastIndex() - 1, #StartRaw + line - 1)), nightArray, curWorkSheetNum);
+        #        line++;
+        #        document.insertValue(strfmt("%1:%2",
+        #                                    COMExcelDocument_RU::numToNameCell(#StartCol, #StartRaw + line - 1),
+        #                                    COMExcelDocument_RU::numToNameCell(#StartCol + holidayHoursArray.lastIndex() - 1, #StartRaw + line - 1)), holidayHoursArray, curWorkSheetNum);
+        #        line++;
+        #        document.insertValue(strfmt("%1:%2",
+        #                                    COMExcelDocument_RU::numToNameCell(#StartCol, #StartRaw + line - 1),
+        #                                    COMExcelDocument_RU::numToNameCell(#StartCol + wrkStopHoursArray.lastIndex() - 1, #StartRaw + line - 1)), wrkStopHoursArray, curWorkSheetNum);
+        #
+        #        line++;
+        #        document.insertValue(strfmt("%1:%2",
+        #                                    COMExcelDocument_RU::numToNameCell(#StartCol, #StartRaw + line - 1),
+        #                                    COMExcelDocument_RU::numToNameCell(#StartCol + combinationHoursArray.lastIndex() - 1, #StartRaw + line - 1)), combinationHoursArray, curWorkSheetNum);
+        #
+        #
+        #
+        #
+        #        setIterator = new SetIterator(paymSet);
+        #        while (setIterator.more())
+        #        {
+        #//+Nab 28.04.15 OK003256 KKB
+        #      //      paymDesciption += paymDesciption ? ", " + setIterator.value() : setIterator.value();
+        #              paymDesciption += setIterator.value();
+        #//-Nab 28.04.15 OK003256 KKB
+        #            setIterator.next();
+        #        }
+        #
+        #        paymArray.addElement(COMVariant::createFromStr(paymDesciption));
+        #
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(#PaymCol, #StartRaw + paymLine), paymDesciption, curWorkSheetNum);
+        #        paymLine +=6;
+        #
+        #        document.insertValue(COMExcelDocument_RU::numToNameCell(#FactCol+1, #StartRaw + factLine), planHours, curWorkSheetNum);
+        #        factLine +=6;
+        #
+        #        setIteratorMark = new SetIterator(markSet);
+        #   /*     while (setIteratorMark.more())
+        #        {
+        #            range = document.findRange_OK(COMExcelDocument_RU::numToNameCell(setIteratorMark.value() + 3, #StartRaw + line - 6), curWorkSheetNum);
+        #            cell  = range.Interior();
+        #            cell.Color(WinApi::rgb2int(255, 0, 0));
+        #
+        #            setIteratorMark.next();
+        #        }
+        #*/
+        #
+        #    }
+        #
+        #}
+      ENDSOURCE
+      SOURCE #printSheet3
+        #void printSheet3()
+        #{
+        #    JSJournalTable_OK       journalTable;
+        #    JSJournalExecutor_OK    journalExecutor, executor;
+        #    Counter                 counter, line;
+        #    ArrayExtend_RU          newArray;
+        #    JSEmplId_OK             emplId;
+        #
+        #    #define.CopyRaw(3)
+        #    #define.LinesInTemplate(3)
+        #    #define.StartCol(1)
+        #    #define.StartRaw(2)
+        #    ;
+        #    document.activateWorksheet(curWorkSheetNum);
+        #
+        #
+        #    emplId = JSEmpl_OK::findByTabNum(tabNum, endDate).JSEmplId;
+        #
+        #    select count(RecId) from journalTable
+        #        where  journalTable.StartDate        >= startDate
+        #            && journalTable.StartDate        <= endDate
+        #            && journalTable.DepartmentId     == departmentId
+        #            && journalTable.PaymTypeId       == paymType
+        #            && journalTable.JournalNameId    == journalName
+        #            && journalTable.ExpensesCategory == expensesCategory
+        #            && (!onlyApproved
+        #            || journalTable.Status           == JSJournalStatus_OK::Approved)
+        #            && (!onlyCalculated
+        #            || journalTable.Status           == JSJournalStatus_OK::Calculated)
+        #            &&  journalTable.JournalType     == JSJournalType_OK::Periodical
+        #            &&  (!filterJournalId
+        #            ||  journalTable.JournalId       == filterJournalId)
+        #    exists join journalExecutor
+        #        where   journalExecutor.JournalId    == journalTable.JournalId
+        #            &&  (!emplId
+        #            ||  journalExecutor.EmplId       == emplId)
+        #            &&  (!calcId
+        #            ||  journalExecutor.CalcId       == calcId);
+        #
+        #    for (counter = 1; counter <= journalTable.RecId - #LinesInTemplate; counter++)
+        #    {
+        #        document.insertRow(#CopyRaw, curWorkSheetNum);
+        #    }
+        #
+        #    while select journalTable
+        #        where  journalTable.StartDate        >= startDate
+        #            && journalTable.StartDate        <= endDate
+        #            && journalTable.DepartmentId     == departmentId
+        #            && journalTable.PaymTypeId       == paymType
+        #            && journalTable.JournalNameId    == journalName
+        #            && journalTable.ExpensesCategory == expensesCategory
+        #            && (!onlyApproved
+        #            || journalTable.Status           == JSJournalStatus_OK::Approved)
+        #            && (!onlyCalculated
+        #            || journalTable.Status           == JSJournalStatus_OK::Calculated)
+        #            &&  journalTable.JournalType     == JSJournalType_OK::Periodical
+        #            &&  (!filterJournalId
+        #            ||  journalTable.JournalId       == filterJournalId)
+        #     exists join journalExecutor
+        #        where   journalExecutor.JournalId    == journalTable.JournalId
+        #            &&  (!emplId
+        #            ||  journalExecutor.EmplId      == emplId)
+        #            &&  (!calcId
+        #            ||  journalExecutor.CalcId       == calcId)
+        #
+        #    {
+        #        line++;
+        #        newArray = new ArrayExtend_RU(Types::Class);
+        #
+        #        newArray.addElement(COMVariant::createFromStr(strfmt("%1", journalTable.StartDate)));
+        #        newArray.addElement(COMVariant::createFromStr(strfmt("%1", journalTable.JournalId)));
+        #
+        #        document.insertValue(strfmt("%1:%2",
+        #                                    COMExcelDocument_RU::numToNameCell(#StartCol, #StartRaw + line - 1),
+        #                                    COMExcelDocument_RU::numToNameCell(#StartCol + newArray.lastIndex() - 1, #StartRaw + line - 1)), newArray, curWorkSheetNum);
+        #
+        #    }
+        #
+        #}
+      ENDSOURCE
+      SOURCE #run
+        ##define.Worksheet1(1)
+        ##define.Worksheet2(2)
+        ##define.Worksheet3(3)
+        #public void run()
+        #{
+        #    JSChargeOnEmplReport_OK JSChargeOnEmplReport_OK;
+        #    ;
+        #//   if (!this.CheckMasterApprove())
+        #//       break;
+        #
+        #    if (this.makeDocument())
+        #    {
+        #        this.initAddPaymSet();
+        #
+        #        curWorkSheetNum = #Worksheet1;
+        #        this.printSheet1();
+        #
+        #        curWorkSheetNum = #Worksheet2;
+        #        this.printSheet2();
+        #
+        #        curWorkSheetNum = #Worksheet3;
+        #        this.printSheet3();
+        #
+        #        document.visible(true);
+        #    }
+        #    if (charge)
+        #    {
+        #    JSChargeOnEmplReport_OK = new JSChargeOnEmplReport_OK();
+        #    JSChargeOnEmplReport_OK.getStartDate(startDate);
+        #    JSChargeOnEmplReport_OK.getEndDate(endDate);
+        #    JSChargeOnEmplReport_OK.getJSJournalNamePeriodical(journalName);
+        #    JSChargeOnEmplReport_OK.run();
+        #    }
+        #}
+      ENDSOURCE
+      SOURCE #unpack
+        #public boolean unpack(container _packedClass)
+        #{
+        #    Integer     version     = conPeek(_packedClass,1);
+        #
+        #    switch (version)
+        #    {
+        #        case #CurrentVersion:
+        #            [version, #CurrentList] = _packedClass;
+        #            break;
+        #        default :
+        #            return false;
+        #    }
+        #
+        #    return true;
+        #}
+      ENDSOURCE
+    ENDMETHODS
+  ENDCLASS
+
+***Element: END

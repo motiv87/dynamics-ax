@@ -1,0 +1,213 @@
+﻿Exportfile for AOT version 1.0 or later
+Formatversion: 1
+
+***Element: FRM
+
+; Microsoft Dynamics AX Forms unloaded
+; --------------------------------------------------------------------------------
+FRMVERSION 5
+
+FORM #JSEmpl_OK
+  PROPERTIES
+    Name                #JSEmpl_OK
+  ENDPROPERTIES
+  
+  METHODS
+    Version: 3
+    SOURCE #classDeclaration
+      #// dyol 02.12.2010 OK001244 [Система ввода нарядов] -->
+      #public class FormRun extends ObjectRun
+      #// dyol 02.12.2010 OK001244 [Система ввода нарядов] <--
+      #{
+      #    NumberSeqFormHandler    numberSeqFormHandler;
+      #}
+    ENDSOURCE
+  ENDMETHODS
+  OBJECTBANK
+    PROPERTIES
+    ENDPROPERTIES
+    
+    DATASOURCE
+      OBJECTPOOL
+        PROPERTIES
+          Name                #JSEmpl
+          Table               #JSEmpl_OK
+        ENDPROPERTIES
+        
+        FIELDLIST
+        ENDFIELDLIST
+      ENDOBJECTPOOL
+    ENDDATASOURCE
+  ENDOBJECTBANK
+  
+  JOINS
+  ENDJOINS
+  
+  DESIGN
+    PROPERTIES
+      Width               #Column width
+      Height              #Column height
+      Caption             #Работники
+      TitleDatasource     #JSEmpl
+    ENDPROPERTIES
+    
+    CONTAINER
+      CONTROL TAB
+        PROPERTIES
+          Name                #Tab
+          Width               #Column width
+          Height              #Column height
+        ENDPROPERTIES
+        
+        CONTAINER
+          CONTROL TABPAGE
+            PROPERTIES
+              Name                #OverviewPage
+              Width               #Column width
+              Height              #Column height
+              Caption             #Обзор
+            ENDPROPERTIES
+            
+            CONTAINER
+              CONTROL GRID
+                PROPERTIES
+                  Name                #Grid
+                  Width               #Column width
+                  Height              #Column height
+                  DataSource          #JSEmpl
+                ENDPROPERTIES
+                
+                  CONTAINER
+                    CONTROL STRINGEDIT
+                      PROPERTIES
+                        Name                #JSEmpl_JSEmplId
+                        DataSource          #JSEmpl
+                        DataField           #JSEmplId
+                      ENDPROPERTIES
+                      
+                    ENDCONTROL 
+                    
+                    CONTROL STRINGEDIT
+                      PROPERTIES
+                        Name                #JSEmpl_TabNum
+                        DataSource          #JSEmpl
+                        DataField           #TabNum
+                      ENDPROPERTIES
+                      
+                    ENDCONTROL 
+                    
+                    CONTROL DATEEDIT
+                      PROPERTIES
+                        Name                #JSEmpl_StartDate
+                        DataSource          #JSEmpl
+                        DataField           #StartDate
+                      ENDPROPERTIES
+                      
+                    ENDCONTROL 
+                    
+                    CONTROL DATEEDIT
+                      PROPERTIES
+                        Name                #JSEmpl_EndDate
+                        DataSource          #JSEmpl
+                        DataField           #EndDate
+                      ENDPROPERTIES
+                      
+                    ENDCONTROL 
+                    
+                    CONTROL STRINGEDIT
+                      PROPERTIES
+                        Name                #JSEmpl_Name
+                        DataSource          #JSEmpl
+                        DataField           #Name
+                      ENDPROPERTIES
+                      
+                    ENDCONTROL 
+                    
+                    CONTROL STRINGEDIT
+                      PROPERTIES
+                        Name                #displayDepartmentName
+                        AllowEdit           #No
+                        Label               #Подразделение
+                        DataSource          #JSEmpl
+                        DataMethod          #displayDepartmentName
+                      ENDPROPERTIES
+                      
+                    ENDCONTROL 
+                    
+                  ENDCONTAINER
+                  
+              ENDCONTROL 
+              
+            ENDCONTAINER
+            
+          ENDCONTROL 
+          
+          CONTROL TABPAGE
+            PROPERTIES
+              Name                #GeneralPage
+              Width               #Column width
+              Height              #Column height
+              Caption             #Разное
+            ENDPROPERTIES
+            
+            CONTAINER
+              CONTROL GROUP
+                PROPERTIES
+                  Name                #EmplGroup
+                  DataSource          #JSEmpl
+                  DataGroup           #EmplGroup
+                  AutoDataGroup       #Yes
+                ENDPROPERTIES
+                
+                  CONTAINER
+                  ENDCONTAINER
+                  
+              ENDCONTROL 
+              
+              CONTROL GROUP
+                PROPERTIES
+                  Name                #DateGroup
+                  DataSource          #JSEmpl
+                  DataGroup           #DateGroup
+                  AutoDataGroup       #Yes
+                ENDPROPERTIES
+                
+                  CONTAINER
+                  ENDCONTAINER
+                  
+              ENDCONTROL 
+              
+            ENDCONTAINER
+            
+          ENDCONTROL 
+          
+        ENDCONTAINER
+        
+      ENDCONTROL 
+      
+      CONTROL BUTTONGROUP
+        PROPERTIES
+          Name                #ButtonGroup
+        ENDPROPERTIES
+        
+        CONTAINER
+          CONTROL MENUITEMBUTTON
+            PROPERTIES
+              Name                #JSEmplMove_OK
+              MenuItemName        #JSEmplMove_OK
+            ENDPROPERTIES
+            
+          ENDCONTROL 
+          
+        ENDCONTAINER
+        
+      ENDCONTROL 
+      
+    ENDCONTAINER
+    
+  ENDDESIGN
+  
+ENDFORM
+
+
+***Element: END

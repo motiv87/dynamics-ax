@@ -1,0 +1,398 @@
+﻿Exportfile for AOT version 1.0 or later
+Formatversion: 1
+
+***Element: CLS
+
+; Microsoft Dynamics AX Class: JSPieceWorkBrigadeReport_OK выгружен
+; --------------------------------------------------------------------------------
+  CLSVERSION 1
+  
+  CLASS #JSPieceWorkBrigadeReport_OK
+    PROPERTIES
+      Name                #JSPieceWorkBrigadeReport_OK
+      Extends             #RunBase
+      RunOn               #Called from
+    ENDPROPERTIES
+    
+    METHODS
+      Version: 3
+      SOURCE #classDeclaration
+        #// dyol 01.12.2010 OK001244 [Система ввода нарядов] -->
+        #class JSPieceWorkBrigadeReport_OK extends RunBase
+        #// dyol 01.12.2010 OK001244 [Система ввода нарядов] <--
+        #{
+        #    StartDate                   startDate;
+        #    EndDate                     endDate;
+        #    JSPoolId_OK                 poolId;
+        #    JSBrigadeId_OK              brigadeId;
+        #    JSBrigadeFactId_OK          brigadeFactId;
+        #    JSPaymTypeId_OK             paymType;
+        #    JSJournalId_OK              filterJournalId;
+        #    JSExpensesCategory_OK       expensesCategory;
+        #    JSCalcId_OK                 calcId;
+        #    NoYes                       onlyApproved;
+        #
+        #    TmpJSCombinationTable_OK    tmpTable;
+        #    ComExcelDocument_RU         document;
+        #    int                         curWorkSheetNum;
+        #
+        #    Set                         addPaymSet;
+        #
+        #}
+      ENDSOURCE
+      SOURCE #createTmpCombinationTable
+        #void createTmpCombinationTable()
+        #{
+        #    KeySum_OK                               combSum = new KeySum_OK(1, 1);
+        #    Counter                                 counter;
+        #    JSRateId_OK                             rateId;
+        #    JSHours_OK                              hours;
+        #    JSBrigadeFactTable_OK                   factTable;
+        #    JSJournalType_OK                        journalType;
+        #    JSPaymTypeId_OK                         paymTypeId;
+        #    JSPieceWorkJournalLine_OK               journalLine;
+        #    JSTimeTrans_OK                          timeTrans;
+        #    JSJournalTable_OK                       journalTable, journalTableSearch;
+        #    JSRateTable_OK                          rateTable;
+        #    JSCombinationTrans_OK                   comb, combTrans;
+        #    JSJournalId_OK                          journalId;
+        #    JSBrigadeNormContent_OK                 content;
+        #    JSEmpl_OK                               empl;
+        #    Description                             emplDesc;
+        #    JSJournalExecutor_OK                    executor;
+        #    Hours                                   usedHours;
+        #    ;
+        #    while select journalTable
+        #        where   journalTable.PoolId             == poolId
+        #            &&  journalTable.StartDate          >= startDate
+        #            &&  journalTable.StartDate          <= endDate
+        #            &&  journalTable.JournalType        == JSJournalType_OK::PieceWorkBrigade
+        #            &&  journalTable.PaymTypeId         == paymType
+        #            &&  journalTable.ExpensesCategory   == expensesCategory
+        #            &&  (!filterJournalId
+        #            ||  journalTable.JournalId          == filterJournalId)
+        #            && (!onlyApproved
+        #            ||  journalTable.Status        == JSJournalStatus_OK::Approved
+        #            ||  journalTable.Status        == JSJournalStatus_OK::Calculated)
+        #    join executor
+        #        where   executor.JournalId      == journalTable.JournalId
+        #            &&  executor.BrigadeFactId  == brigadeFactId
+        #            &&  executor.BrigadeId      == brigadeId
+        #            &&  (!calcId
+        #            ||  executor.CalcId         == calcId)
+        #    join timeTrans
+        #        where   timeTrans.ExecutorId    == executor.ExecutorId
+        #    {
+        #        combSum.updateNow([
+        #                            journalTable.JournalId,
+        #                            executor.BrigadeFactId,
+        #                            timeTrans.RateId
+        #                          ],
+        #                          [
+        #                            timeTrans.WorkHours
+        #                          ]);
+        #    }
+        #
+        #    while select journalTable
+        #        where   journalTable.PoolId             == poolId
+        #            &&  journalTable.StartDate          >= startDate
+        #            &&  journalTable.StartDate          <= endDate
+        #            &&  journalTable.JournalType        == JSJournalType_OK::PieceWorkBrigade
+        #            &&  journalTable.PaymTypeId         == paymType
+        #            &&  journalTable.ExpensesCategory   == expensesCategory
+        #            &&  (!filterJournalId
+        #            ||  journalTable.JournalId          == filterJournalId)
+        #            && (!onlyApproved
+        #            ||  journalTable.Status        == JSJournalStatus_OK::Approved
+        #            ||  journalTable.Status        == JSJournalStatus_OK::Calculated)
+        #    join executor
+        #        where   executor.JournalId      == journalTable.JournalId
+        #            &&  executor.BrigadeFactId  == brigadeFactId
+        #            &&  executor.BrigadeId      == brigadeId
+        #            &&  (!calcId
+        #            ||  executor.CalcId         == calcId)
+        #    join comb
+        #        where   comb.ExecutorId == executor.ExecutorId
+        #            &&  comb.JSEmplId
+        #    {
+        #        combSum.updateNow([
+        #                            journalTable.JournalId,
+        #                            executor.BrigadeFactId,
+        #                            comb.RateId
+        #                          ],
+        #                          [
+        #                            comb.Hours
+        #                          ]);
+        #    }
+        #
+        #
+        #    while select journalTable
+        #        where   journalTable.PoolId             == poolId
+        #            &&  journalTable.StartDate          >= startDate
+        #            &&  journalTable.StartDate          <= endDate
+        #            &&  journalTable.JournalType        == JSJournalType_OK::PieceWorkBrigade
+        #            &&  journalTable.PaymTypeId         == paymType
+        #            &&  journalTable.ExpensesCategory   == expensesCategory
+        #            &&  (!filterJournalId
+        #            ||  journalTable.JournalId          == filterJournalId)
+        #            && (!onlyApproved
+        #            ||  journalTable.Status        == JSJournalStatus_OK::Approved
+        #            ||  journalTable.Status        == JSJournalStatus_OK::Calculated)
+        #    join executor
+        #        where   executor.JournalId      == journalTable.JournalId
+        #            &&  executor.BrigadeFactId  == brigadeFactId
+        #            &&  executor.BrigadeId      == brigadeId
+        #            &&  (!calcId
+        #            ||  executor.CalcId         == calcId)
+        #    {
+        #        while select content
+        #            where   content.BrigadeId == executor.BrigadeId
+        #        {
+        #            [hours] = combSum.index2Data(combSum.key2Index([journalTable.JournalId, executor.BrigadeFactId, content.RateId]));
+        #
+        #            select firstonly journalLine
+        #                order by TotalHours desc
+        #                where   journalLine.ExecutorId == executor.ExecutorId;
+        #
+        #            if (hours < content.EmplNumber * journalLine.TotalHours)
+        #            {
+        #                tmpTable.clear();
+        #                tmpTable.JournalId          = journalTable.JournalId;
+        #                tmpTable.BrigadeFactId      = executor.BrigadeFactId;
+        #                tmpTable.RateId             = content.RateId;
+        #                tmpTable.Hours              = content.EmplNumber * journalLine.TotalHours - hours;
+        #                tmpTable.TransDate          = journalTable.StartDate;
+        #                tmpTable.PoolId             = journalTable.PoolId;
+        #                tmpTable.PaymTypeId         = journalTable.PaymTypeId;
+        #                tmpTable.JournalType        = journalTable.JournalType;
+        #                tmpTable.insert();
+        #            }
+        #        }
+        #    }
+        #
+        #    while select JournalId, StartDate from journalTable
+        #        group by JournalId, StartDate
+        #        where   journalTable.PoolId             == poolId
+        #            &&  journalTable.StartDate          >= startDate
+        #            &&  journalTable.StartDate          <= endDate
+        #            &&  journalTable.JournalType        == JSJournalType_OK::PieceWorkBrigade
+        #            &&  journalTable.PaymTypeId         == paymType
+        #            &&  journalTable.ExpensesCategory   == expensesCategory
+        #            &&  (!filterJournalId
+        #            ||  journalTable.JournalId          == filterJournalId)
+        #            && (!onlyApproved
+        #            ||  journalTable.Status        == JSJournalStatus_OK::Approved
+        #            ||  journalTable.Status        == JSJournalStatus_OK::Calculated)
+        #    join ExecutorId from executor
+        #        group by ExecutorId
+        #        where   executor.JournalId      == journalTable.JournalId
+        #            &&  executor.BrigadeFactId  == brigadeFactId
+        #            &&  executor.BrigadeId      == brigadeId
+        #            &&  (!calcId
+        #            ||  executor.CalcId         == calcId)
+        #    join RateId, Hours from comb
+        #        group by RateId, Hours
+        #        where   comb.ExecutorId == executor.ExecutorId
+        #            &&  comb.JSEmplId
+        #    {
+        #        emplDesc    = "";
+        #        usedHours   = 0;
+        #        while select combTrans
+        #            where   combTrans.ExecutorId == executor.ExecutorId
+        #                &&  combTrans.RateId     == comb.RateId
+        #                &&  combTrans.Hours      == comb.Hours
+        #        join empl
+        #            where   empl.JSEmplId == combTrans.JSEmplId
+        #        {
+        #            emplDesc  += emplDesc ? "," + empl.TabNum : empl.TabNum;
+        #            usedHours += comb.Hours;
+        #        }
+        #
+        #        tmpTable.clear();
+        #        tmpTable.JournalId      = journalTable.JournalId;
+        #        tmpTable.RateId         = comb.RateId;
+        #        tmpTable.Hours          = usedHours;
+        #        tmpTable.TransDate      = journalTable.StartDate;
+        #        tmpTable.Description    = emplDesc;
+        #        tmpTable.insert();
+        #    }
+        #}
+      ENDSOURCE
+      SOURCE #dialog
+        #protected Dialog dialog(DialogRunbase _dialog, boolean _forceOnClient)
+        #{
+        #    DialogRunbase       dialog;
+        #    ;
+        #    dialog = dialog::newFormnameRunbase(formstr(JSPieceWorkBrigadeReportDialogForm_OK), this);
+        #
+        #    dialog = super(dialog);
+        #
+        #    return dialog;
+        #}
+      ENDSOURCE
+      SOURCE #parmBrigadeFactId
+        #JSBrigadeFactId_OK parmBrigadeFactId(JSBrigadeFactId_OK _brigadeFactId = brigadeFactId)
+        #{
+        #    brigadeFactId = _brigadeFactId;
+        #
+        #    return brigadeFactId;
+        #}
+      ENDSOURCE
+      SOURCE #parmBrigadeId
+        #JSBrigadeId_OK parmBrigadeId(JSBrigadeId_OK _brigadeId = brigadeId)
+        #{
+        #    ;
+        #    brigadeId = _brigadeId;
+        #
+        #    return brigadeId;
+        #}
+      ENDSOURCE
+      SOURCE #parmCalcId
+        #JSCalcId_OK parmCalcId(JSCalcId_OK _calcId = calcId)
+        #{
+        #    ;
+        #    calcId = _calcId;
+        #
+        #    return calcId;
+        #}
+      ENDSOURCE
+      SOURCE #parmEndDate
+        #EndDate parmEndDate(EndDate   _endDate = endDate)
+        #{
+        #    ;
+        #    endDate = _endDate;
+        #
+        #    return endDate;
+        #}
+      ENDSOURCE
+      SOURCE #parmExpensesCategory
+        #JSExpensesCategory_OK parmExpensesCategory(JSExpensesCategory_OK    _expensesCategory = expensesCategory)
+        #{
+        #    ;
+        #    expensesCategory = _expensesCategory;
+        #
+        #    return expensesCategory;
+        #}
+      ENDSOURCE
+      SOURCE #parmJournalId
+        #JSJournalId_OK parmJournalId(JSJournalId_OK _journalId = filterJournalId)
+        #{
+        #    ;
+        #    filterJournalId = _journalId;
+        #
+        #    return filterJournalId;
+        #}
+      ENDSOURCE
+      SOURCE #parmOnlyApproved
+        #NoYes parmOnlyApproved(NoYes _onlyApproved = onlyApproved)
+        #{
+        #    onlyApproved = _onlyApproved;
+        #
+        #    return onlyApproved;
+        #}
+      ENDSOURCE
+      SOURCE #parmPaymTypeId
+        #JSPaymTypeId_OK parmPaymTypeId(JSPaymTypeId_OK _paymType = paymType)
+        #{
+        #    ;
+        #    paymType = _paymType;
+        #
+        #    return paymType;
+        #}
+      ENDSOURCE
+      SOURCE #parmPoolId
+        #JSPoolId_OK parmPoolId(JSPoolId_OK  _poolId = poolId)
+        #{
+        #    ;
+        #    poolId = _poolId;
+        #
+        #    return poolId;
+        #}
+      ENDSOURCE
+      SOURCE #parmStartDate
+        #StartDate parmStartDate(StartDate   _startDate = startDate)
+        #{
+        #    ;
+        #    startDate = _startDate;
+        #
+        #    return startDate;
+        #}
+      ENDSOURCE
+      SOURCE #run
+        #
+        #public void run()
+        #{
+        #    super();
+        #}
+      ENDSOURCE
+      SOURCE #validate
+        #public boolean validate(Object calledFrom)
+        #{
+        #    boolean ret;
+        #    ;
+        #    ret = super(calledFrom);
+        #
+        #    if (!startDate)
+        #        ret = checkFailed("Не заполнена начальная дата");
+        #
+        #    if (!endDate)
+        #        ret = checkFailed("Не заполнена конечная дата");
+        #
+        #    if (mthOfYr(startDate) != mthOfYr(endDate))
+        #        ret = checkFailed("Даты должны принадлежать одному отчетному периоду");
+        #
+        #    if (!poolId || !JSPoolTable_OK::find(poolId))
+        #        ret = checkFailed("Некорректный участок");
+        #
+        #    if (!brigadeId || !JSBrigadeTable_OK::find(brigadeId))
+        #        ret = checkFailed("Некорректный код бригады");
+        #
+        #    if (!brigadeFactId || !JSBrigadeFactTable_OK::find(brigadeFactId))
+        #        ret = checkFailed("Некорректная бригада");
+        #
+        #   if (!paymType || !JSPaymType_OK::find(paymType))
+        #       ret = checkFailed("Некорректный вид оплаты");
+        #
+        #    if (!expensesCategory)
+        #        ret = checkFailed("Не выбрана категория затрат");
+        #
+        #    return ret;
+        #}
+      ENDSOURCE
+      SOURCE #construct
+        #static JSPieceWorkBrigadeReport_OK construct()
+        #{
+        #    JSParameters_OK        parameters = JSParameters_OK::find();
+        #    ;
+        #    Switch (parameters.ReportCompany_OK)
+        #    {
+        #        case JSReportCompany_OK::RF :
+        #            return new JSPieceWorkBrigadeReport_RF_OK();
+        #        break;
+        #
+        #        case JSReportCompany_OK::KKB :
+        #        case JSReportCompany_OK::KO :
+        #            return new JSPieceWorkBrigadeReport_KKB_OK();
+        #        break;
+        #
+        #        default :
+        #            throw error("Некорректный вызов");
+        #    }
+        #}
+      ENDSOURCE
+      SOURCE #main
+        #static void main(Args _args)
+        #{
+        #    JSPieceWorkBrigadeReport_OK      report;
+        #    ;
+        #    report = JSPieceWorkBrigadeReport_OK::construct();
+        #    if (report.prompt())
+        #    {
+        #        report.run();
+        #    }
+        #}
+      ENDSOURCE
+    ENDMETHODS
+  ENDCLASS
+
+***Element: END
