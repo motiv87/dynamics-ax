@@ -1,0 +1,458 @@
+﻿Exportfile for AOT version 1.0 or later
+Formatversion: 1
+
+***Element: DBT
+
+; Microsoft Dynamics AX Table : ExtConnection_OK unloaded
+; --------------------------------------------------------------------------------
+  TABLEVERSION 1
+  
+  TABLE #ExtConnection_OK
+    PROPERTIES
+      Name                #ExtConnection_OK
+      Label               #Параметры подключения
+      TitleField1         #ConnectionId
+      TitleField2         #ConnectionName
+      SecurityKey         #AdminTables
+      CacheLookup         #EntireTable
+      TableGroup          #Group
+      PrimaryIndex        #ConnectionIdx
+      ClusterIndex        #ConnectionIdx
+    ENDPROPERTIES
+    
+    FIELDS
+      FIELD #TCPIPPort
+        STRING
+        PROPERTIES
+          Name                #TCPIPPort
+          Table               #ExtConnection_OK
+          ExtendedDataType    
+            ARRAY 
+              #TCPIPPort_OK
+              #
+            ENDARRAY
+          StringSize          #5
+        ENDPROPERTIES
+        
+      FIELD #DBPassword
+        STRING
+        PROPERTIES
+          Name                #DBPassword
+          Table               #ExtConnection_OK
+          ExtendedDataType    
+            ARRAY 
+              #DBPassword_OK
+              #
+            ENDARRAY
+          StringSize          #30
+        ENDPROPERTIES
+        
+      FIELD #DBUser
+        STRING
+        PROPERTIES
+          Name                #DBUser
+          Table               #ExtConnection_OK
+          ExtendedDataType    
+            ARRAY 
+              #DBUser_OK
+              #
+            ENDARRAY
+          StringSize          #30
+        ENDPROPERTIES
+        
+      FIELD #DataBase
+        STRING
+        PROPERTIES
+          Name                #DataBase
+          Mandatory           #Yes
+          Table               #ExtConnection_OK
+          ExtendedDataType    
+            ARRAY 
+              #DataBase_OK
+              #
+            ENDARRAY
+          StringSize          #30
+        ENDPROPERTIES
+        
+      FIELD #DBServer
+        STRING
+        PROPERTIES
+          Name                #DBServer
+          Mandatory           #Yes
+          Table               #ExtConnection_OK
+          ExtendedDataType    
+            ARRAY 
+              #DBServer_OK
+              #
+            ENDARRAY
+          StringSize          #30
+        ENDPROPERTIES
+        
+      FIELD #ConnectionId
+        STRING
+        PROPERTIES
+          Name                #ConnectionId
+          Label               #Код подключения
+          HelpText            #Код подключения к базе данных БОСС
+          Mandatory           #Yes
+          AllowEdit           #No
+          Table               #ExtConnection_OK
+          ExtendedDataType    
+            ARRAY 
+              #ExtConnectionId_OK
+              #
+            ENDARRAY
+        ENDPROPERTIES
+        
+      FIELD #ConnectionName
+        STRING
+        PROPERTIES
+          Name                #ConnectionName
+          Table               #ExtConnection_OK
+          ExtendedDataType    
+            ARRAY 
+              #ExtConnectionName_OK
+              #
+            ENDARRAY
+          StringSize          #140
+        ENDPROPERTIES
+        
+      FIELD #ConnectionType
+        ENUM
+        PROPERTIES
+          Name                #ConnectionType
+          Table               #ExtConnection_OK
+          EnumType            #ExtConnectionType_OK
+        ENDPROPERTIES
+        
+    ENDFIELDS
+    GROUPS
+      GROUP #ConnectionGroup
+        PROPERTIES
+          Name                #ConnectionGroup
+          Label               #Параметры
+        ENDPROPERTIES
+        
+        GROUPFIELDS
+          #DBServer
+          #DataBase
+          #DBUser
+          #DBPassword
+          #TCPIPPort
+        ENDGROUPFIELDS
+      ENDGROUP
+    ENDGROUPS
+    
+    INDICES
+      #ConnectionIdx
+      PROPERTIES
+        Name                #ConnectionIdx
+        AllowDuplicates     #No
+      ENDPROPERTIES
+      
+      INDEXFIELDS
+        #ConnectionId
+      ENDINDEXFIELDS
+      
+    ENDINDICES
+    REFERENCES
+    ENDREFERENCES
+    
+    DELETEACTIONS
+    ENDDELETEACTIONS
+    
+    METHODS
+      Version: 3
+      SOURCE #checkSQLConnection
+        #// DPL ExtConnection_OK 23.12.2011 OK
+        #boolean checkSQLConnection()
+        #{
+        #    CCADOConnection cnn;
+        #    ;
+        #    new InteropPermission(InteropKind::ComInterop).assert();
+        #
+        #    cnn = this.createSQLConnection();
+        #
+        #    ExtConnection_OK::openSQLQuery(cnn, "select 'test'");
+        #
+        #    info("Соединение работает.");
+        #
+        #    return true;
+        #}
+      ENDSOURCE
+      SOURCE #createSQLConnection
+        #// DPL ExtConnection_OK 23.12.2011 OK
+        #CCADOConnection createSQLConnection()
+        #{
+        #    CCADOConnection         ret;
+        #    str                     connectionStr;
+        #    ;
+        #
+        #    connectionStr   = this.getConnectionString();
+        #
+        #    ret = new CCADOConnection();
+        #    ret.connectionString(connectionStr);
+        #    ret.open();
+        #
+        #    return ret;
+        #}
+      ENDSOURCE
+      SOURCE #getConnectionString
+        #// DPL ExtConnection_OK 23.12.2011 OK
+        #str getConnectionString()
+        #{
+        #    str         ret;
+        #    ;
+        #    if (!this.DataBase || !this.DBServer)
+        #        return ret;
+        #
+        #    switch (this.ConnectionType)
+        #    {
+        #        case ExtConnectionType_OK::ADO :
+        #            if (!this.DBUser)
+        #                ret = strfmt('DRIVER=SQL Server;SERVER=%1;DataBase=%2;Trusted_Connection=No', this.DBServer, this.DataBase);
+        #            else
+        #                ret = strfmt('Trusted_Connection=False;Provider=SQLOLEDB.1;Persist Security Info=True;Data Source=%1;Initial Catalog=%2;User ID=%3;Password=%4',
+        #                             this.DBServer,
+        #                             this.DataBase,
+        #                             this.DBUser,
+        #                             this.DBPassword);
+        #        break;
+        #
+        #        case ExtConnectionType_OK::Reference :
+        #            if (!this.DBUser)
+        #                ret = strfmt('Data Source=%1;Initial Catalog=%2;Persist Security Info=True; Trusted_Connection=Yes', this.DBServer, this.DataBase);
+        #            else
+        #                ret = strfmt('Data Source=%1;Initial Catalog=%2;UserId=%3;Password=%4',
+        #                             this.DBServer,
+        #                             this.DataBase,
+        #                             this.DBUser,
+        #                             this.DBPassword);
+        #        break;
+        #    }
+        #
+        #    return ret;
+        #}
+        #// dyol 21.04.2011 OK001609 [Наряды. Доработка импорта справочников] <--
+        #
+      ENDSOURCE
+      SOURCE #execSP
+        #// nefed OK002962 20.09.2013 OK
+        #static COM execSP(CCADOConnection _cnn, str _procedureName, MAP _param)
+        #{
+        #    #CCADo
+        #    CCADOCommand    cmd;
+        #    Int             i, n;
+        #    Str             name;
+        #    COM             parameters, parameter;
+        #    ;
+        #    cmd = new CCADOCommand();
+        #    cmd.activeConnection(_cnn);
+        #    cmd.commandType(#adCmdStoredProc);
+        #    cmd.commandText(_procedureName);
+        #
+        #    parameters = cmd.parameters();
+        #    parameters.refresh();
+        #
+        #    n = any2int(parameters.Count());
+        #
+        #    for (i = 0; i < n; ++i)
+        #    {
+        #        parameter = parameters.Item(i);
+        #        if (parameter.Direction() == #adParamInput ||
+        #            parameter.Direction() == #adParamInputOutput)
+        #        {
+        #            name = parameter.Name();
+        #            if (_param.exists(name))
+        #            {
+        #                parameter.value(conpeek(_param.lookup(name), 1));
+        #            }
+        #            else
+        #            {
+        #                throw error(strfmt("Для процедуры не передан входящий параметр %1", name));
+        #            }
+        #        }
+        #    }
+        #
+        #    cmd.execute();
+        #
+        #    return parameters;
+        #}
+      ENDSOURCE
+      SOURCE #execSP_Recordset
+        #// ISN OK003416 12.09.2016 OK
+        #static CCADORecordset execSP_Recordset(CCADOConnection _cnn, str _procedureName, MAP _param)
+        #{
+        #    #CCADo
+        #    CCADOCommand    cmd;
+        #    Int             i, n;
+        #    Str             name;
+        #    COM             parameters, parameter;
+        #    CCADORecordset  rst;
+        #    ;
+        #    cmd = new CCADOCommand();
+        #    cmd.activeConnection(_cnn);
+        #    cmd.commandType(#adCmdStoredProc);
+        #    cmd.commandText(_procedureName);
+        #
+        #    parameters = cmd.parameters();
+        #    parameters.refresh();
+        #
+        #    n = any2int(parameters.Count());
+        #
+        #    for (i = 0; i < n; ++i)
+        #    {
+        #        parameter = parameters.Item(i);
+        #        if (parameter.Direction() == #adParamInput ||
+        #            parameter.Direction() == #adParamInputOutput)
+        #        {
+        #            name = parameter.Name();
+        #            if (_param.exists(name))
+        #            {
+        #                parameter.value(conpeek(_param.lookup(name), 1));
+        #            }
+        #            else
+        #            {
+        #                throw error(strfmt("Для процедуры не передан входящий параметр %1", name));
+        #            }
+        #        }
+        #    }
+        #
+        #    rst = cmd.execute();
+        #
+        #    return rst;
+        #}
+      ENDSOURCE
+      SOURCE #execSQLQuery
+        #// DPL ExtConnection_OK 23.12.2011 OK
+        #static void execSQLQuery(CCADOConnection _cnn, str _sqlStr)
+        #{
+        #    CCADOCommand            cmd;
+        #    CCADORecordset          rst;
+        #    ;
+        #
+        #    cmd = new CCADOCommand();
+        #    cmd.activeConnection(_cnn);
+        #    cmd.commandText(_sqlStr);
+        #
+        #    cmd.execute();
+        #}
+      ENDSOURCE
+      SOURCE #find
+        #// DPL ExtConnection_OK 23.12.2011 OK
+        #static ExtConnection_OK find(ExtConnectionId_OK _connectId,
+        #                             boolean            _forupdate = false)
+        #{
+        #    ExtConnection_OK        extConnection;
+        #    ;
+        #    if (_connectId)
+        #    {
+        #        extConnection.selectForUpdate(_forupdate);
+        #
+        #        select firstonly extConnection
+        #            where   extConnection.ConnectionId == _connectId;
+        #    }
+        #
+        #    return extConnection;
+        #}
+      ENDSOURCE
+      SOURCE #openSQLQuery
+        #// DPL ExtConnection_OK 23.12.2011 OK
+        #static CCADORecordset openSQLQuery(CCADOConnection _cnn, str _sqlStr)
+        #{
+        #    CCADOCommand            cmd;
+        #    CCADORecordset          rst;
+        #    ;
+        #
+        #    cmd = new CCADOCommand();
+        #    cmd.activeConnection(_cnn);
+        #    cmd.commandText(_sqlStr);
+        #
+        #    rst = cmd.execute();
+        #
+        #    return rst;
+        #}
+      ENDSOURCE
+      SOURCE #returnValueSP
+        #// nefed OK002962 26.09.2013 OK
+        #static AnyType returnValueSP(COM _parameters)
+        #{
+        #    #CCADo
+        #    Com             parameter;
+        #    Int             i, n;
+        #    AnyType         ret;
+        #    COMVariant      value;
+        #
+        #    Str             name;
+        #    ;
+        #    n = any2int(_parameters.Count());
+        #
+        #    for (i = 0; i < n; ++i)
+        #    {
+        #        parameter = _parameters.Item(i);
+        #        if (parameter.Direction() == #adParamReturnValue)
+        #        {
+        #            value = parameter.value();
+        #
+        #            switch (value.variantType())
+        #            {
+        #                case COMVariantType::VT_I2:
+        #                    ret = value.byte();
+        #                    break;
+        #
+        #                case COMVariantType::VT_I4:
+        #                    ret = value.int();
+        #                    break;
+        #
+        #                case COMVariantType::VT_R4,
+        #                     COMVariantType::VT_R8:
+        #                    ret = value.double();
+        #                    break;
+        #
+        #                case COMVariantType::VT_CY:
+        #                    ret = value.currency();
+        #                    break;
+        #
+        #                case COMVariantType::VT_DATE:
+        #                    ret = value.date();
+        #                    break;
+        #
+        #                case COMVariantType::VT_BSTR:
+        #                    ret = value.bStr();
+        #                    break;
+        #
+        #                case COMVariantType::VT_BOOL:
+        #                    ret = value.boolean();
+        #                    break;
+        #
+        #                case COMVariantType::VT_DECIMAL:
+        #                    ret = value.decimal();
+        #                    break;
+        #
+        #                case COMVariantType::VT_I1:
+        #                    ret = value.byte();
+        #                    break;
+        #
+        #                case COMVariantType::VT_UI1:
+        #                    ret = value.uInt();
+        #                    break;
+        #
+        #                case COMVariantType::VT_UI2:
+        #                    ret = value.uShort();
+        #                    break;
+        #
+        #                case COMVariantType::VT_UI4:
+        #                    ret = value.uLong();
+        #                    break;
+        #            }
+        #            break;
+        #        }
+        #    }
+        #    return ret;
+        #}
+      ENDSOURCE
+    ENDMETHODS
+  ENDTABLE
+  
+
+***Element: END
