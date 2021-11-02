@@ -1,0 +1,325 @@
+﻿Exportfile for AOT version 1.0 or later
+Formatversion: 1
+
+***Element: CLS
+
+; Microsoft Dynamics AX Class: PRDataExportItemId_OK выгружен
+; --------------------------------------------------------------------------------
+  CLSVERSION 1
+  
+  CLASS #PRDataExportItemId_OK
+    PROPERTIES
+      Name                #PRDataExportItemId_OK
+      Extends             #RunBaseBatch
+      RunOn               #Called from
+    ENDPROPERTIES
+    
+    METHODS
+      Version: 3
+      SOURCE #classDeclaration
+        #// NAB Kuchet  22.07.2021 KKB
+        #class PRDataExportItemId_OK extends RunBaseBatch
+        #{
+        #    DialogField             dfItemId, dfCounters;
+        #    NoYes                   items,counters;
+        #
+        #    CCADOConnection         connection;
+        #    CCADOCommand            command;
+        #    CCADORecordset          recordSet;
+        #    NoYes                   updateCounters;
+        #    set                     setRecId;
+        #
+        #    #define.Null('NULL')
+        #
+        #    #define.CurrentVersion(1)
+        #    #localmacro.CurrentList
+        #    items,
+        #    counters
+        #    #endmacro
+        #
+        #}
+      ENDSOURCE
+      SOURCE #dialog
+        #protected Object dialog(DialogRunbase dialog, boolean forceOnClient)
+        #{
+        #    DialogRunbase ret;
+        #
+        #    ret = super(dialog, forceOnClient);
+        #
+        #     ret.addGroup("Параметры");
+        #    dfItemId       =   ret.addFieldValue(typeId(NoYes),items, "Выгрузить номенклатуры");
+        #    dfCounters     =   ret.addFieldValue(typeId(NoYes),counters, "Выгрузить счётчики");
+        #
+        #
+        #    return ret;
+        #}
+      ENDSOURCE
+      SOURCE #fillCountersData
+        #void fillCountersData()
+        #{
+        #    PRCountersTable                         countersTable;
+        #    str                                     queryText;
+        #    System.Data.DataTable                   dataTable;
+        #    System.Data.SqlClient.SqlDataAdapter    adapter;
+        #    ;
+        #
+        #    if (!counters)
+        #    return;
+        #
+        #    while select forupdate countersTable
+        #    {
+        #
+        #        queryText = " SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;";
+        #        queryText +=" BEGIN TRAN";
+        #        queryText +=" IF EXISTS (SELECT * FROM dbo.Counters WITH (UPDLOCK)";
+        #        queryText +="  WHERE ADDRESS =";
+        #        queryText += "'" +  countersTable.PRCounterId + "'";
+        #        queryText +=")";
+        #
+        #        queryText +=" UPDATE dbo.Counters";
+        #        queryText +=" SET DESCRIPTION=";
+        #        queryText += "'" + countersTable.PRCounterName + "'";
+        #        queryText +="  WHERE ADDRESS =";
+        #        queryText += "'" + countersTable.PRCounterId + "'";
+        #        queryText +=" ;";
+        #
+        #        queryText +=" ELSE";
+        #        queryText +=" INSERT dbo.Counters (ADDRESS,DESCRIPTION)";
+        #        queryText += " VALUES (";
+        #        queryText +=this.getValuesData([countersTable.PRCounterId,countersTable.PRCounterName]);
+        #        queryText += ");";
+        #        queryText +=" COMMIT";
+        #
+        #        command = new CCADOCommand();
+        #        command.activeConnection(connection);
+        #        command.commandText(queryText);
+        #        recordSet = command.execute();
+        #        ttsbegin;
+        #        countersTable.Export = true;
+        #        countersTable.update();
+        #        ttscommit;
+        #     }
+        #
+        #}
+      ENDSOURCE
+      SOURCE #fillProductsData
+        #void fillProductsData()
+        #{
+        #    InventTable                             inventTable;
+        #    InventIteminventSetup                   inventSetup;
+        #    str                                     queryText;
+        #    str                                     shortItemId;
+        #    System.Data.DataTable                   dataTable;
+        #    System.Data.SqlClient.SqlDataAdapter    adapter;
+        #    KuchReportParm_OK                       reportParm;
+        #    Query                                   query;
+        #    QueryRun                                qr;
+        #    WrkCtrTable                             WrkCtrTable;
+        #    WrkCtrItemCombination                   WrkCtrItemCombination;
+        #    PRCountersParms                         countersParms;
+        #    ;
+        #
+        #    if (!items)
+        #    return;
+        #    reportParm = KuchReportParm_OK::find();
+        #
+        #/*
+        #    if(reportParm.KuchWrkCtrId)
+        #        {
+        #            query = new Query();
+        #            query.addDataSource(tablenum(WrkCtrTable));
+        #            query.dataSourceNo(1).addRange(fieldnum(WrkCtrTable,WrkCtrId)).value(reportParm.KuchWrkCtrId);
+        #            qr = new QueryRun(query);
+        #            while (qr.next())
+        #            {
+        #                WrkCtrTable = qr.getNo(1);
+        #*/
+        #    while select  WrkCtrId from countersParms
+        #    group by WrkCtrId
+        #    {
+        #
+        #                while select InventTable
+        #                join inventSetup
+        #                    where inventSetup.ItemId == InventTable.ItemId
+        #                    && inventSetup.Stopped == false
+        #                    && inventTable.ItemGroupId like '43.00 ГП'
+        #                    && inventTable.ItemName
+        #                join WrkCtrItemCombination
+        #                    where WrkCtrItemCombination.ItemId == InventTable.ItemId
+        #                    && WrkCtrItemCombination.WrkCtrId == countersParms.WrkCtrId
+        #                {
+        #                    shortItemiD = substr(InventTable.ItemId,1,7);
+        #                    queryText = " SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;";
+        #                    queryText +=" BEGIN TRAN";
+        #                    queryText +=" IF EXISTS (SELECT * FROM dbo.Products WITH (UPDLOCK)";
+        #                    queryText +="  WHERE SKU like";
+        #                    queryText += "'" + shortItemiD + "%'";
+        #                    queryText +=")";
+        #
+        #                    queryText +=" UPDATE dbo.Products";
+        #                    queryText +=" SET NAME=";
+        #                    queryText += "'" + InventTable.ItemName + "',";
+        #                    queryText +=" BLOCKED = ";
+        #                    queryText +=  int2str(inventSetup.Stopped);
+        #                    queryText +="  WHERE SKU like";
+        #                    queryText += "'" + shortItemiD + "%'";
+        #                    queryText +=" ;";
+        #
+        #                    queryText +=" ELSE";
+        #                    queryText +=" INSERT dbo.Products (SKU,NAME,BLOCKED)";
+        #                    queryText += " VALUES (";
+        #                    queryText +=this.getValuesData([shortItemiD,InventTable.ItemName,inventSetup.Stopped]);
+        #                    queryText += ");";
+        #                    queryText +=" COMMIT";
+        #
+        #                  command = new CCADOCommand();
+        #                  command.activeConnection(connection);
+        #                  command.commandText(queryText);
+        #                  recordSet = command.execute();
+        #                }
+        #
+        #     }
+        #
+        #}
+      ENDSOURCE
+      SOURCE #getFromDialog
+        #public boolean getFromDialog()
+        #{
+        #    boolean ret;
+        #    ;
+        #    ret = super();
+        #
+        #    items                   = dfItemId.value();
+        #    counters                 = dfCounters.value();
+        #
+        #    return ret;
+        #}
+      ENDSOURCE
+      SOURCE #getValuesData
+        #str getValuesData(container    _data)
+        #{
+        #    int         dataLenght = conlen(_data);
+        #    str         result;
+        #    Counter     counter;
+        #    TransDate   transDate;
+        #    real        realData;
+        #    ;
+        #    dataLenght = conlen(_data);
+        #
+        #    for (counter = 1; counter <= dataLenght; counter++)
+        #    {
+        #        if (typeOf(conpeek(_data, counter)) == Types::String && conpeek(_data, counter) == #Null)
+        #        {
+        #            result += conpeek(_data, counter);
+        #        }
+        #        else
+        #        {
+        #            switch (typeOf(conpeek(_data, counter)))
+        #            {
+        #                case (Types::Integer) :
+        #                case (Types::Enum)    :
+        #                case (Types::Int64)   :
+        #                    result += int2str(conpeek(_data, counter));
+        #                break;
+        #                case (Types::String)    :
+        #                case (Types::RString)   :
+        #                case (Types::VarString) :
+        #                    result += "'" + conpeek(_data, counter) + "'";
+        #                break;
+        #                case (Types::Date)    :
+        #                    transDate = conpeek(_data, counter);
+        #                    result += "'" + date2str(transDate, 321, 2, 3, 2, 3, 4) + "'";
+        #                break;
+        #                case (Types::Real)    :
+        #                    realData = conpeek(_data, counter);
+        #                    result += "'" + num2str(realData, 1, 4, 1, 0) + "'";
+        #                break;
+        #                default:
+        #                    throw error("Некорректный тип данных");
+        #            }
+        #        }
+        #        if (counter != dataLenght)
+        #            result += ", ";
+        #    }
+        #    return result;
+        #}
+      ENDSOURCE
+      SOURCE #initConnection
+        #void initConnection()
+        #{
+        #    str                             connectionString;
+        #    ;
+        #
+        #    connectionString = ExtConnection_OK::find(CompanyInfo::find().PRKuchetConnectionId_OK).getConnectionString();
+        #
+        #    connection = new CCADOConnection();
+        #
+        #    connection.connectionString(connectionString);
+        #
+        #    connection.open();
+        #}
+      ENDSOURCE
+      SOURCE #pack
+        #public container pack()
+        #{
+        #    return [#CurrentVersion, #CurrentList];
+        #}
+      ENDSOURCE
+      SOURCE #run
+        #public void run()
+        #{
+        #    ;
+        #
+        #    SetPrefix("Выгрузка справочников");
+        #
+        #
+        #    this.initConnection();
+        #    this.fillProductsData();
+        #    this.fillCountersData();
+        #    connection.close();
+        #
+        #    Info(StrFmt("Выгрузка завершена!"));
+        #}
+      ENDSOURCE
+      SOURCE #unpack
+        #public boolean unpack(container packedClass)
+        #{
+        #    Version version = RunBase::getVersion(packedClass);
+        #;
+        #    switch (version)
+        #    {
+        #        case #CurrentVersion:
+        #            [version,#CurrentList] = packedClass;
+        #            break;
+        #        default:
+        #            return false;
+        #    }
+        #
+        #    return true;
+        #}
+      ENDSOURCE
+      SOURCE #construct
+        #static PRDataExportItemId_OK construct()
+        #{
+        #    return new PRDataExportItemId_OK();
+        #}
+      ENDSOURCE
+      SOURCE #Main
+        #static void Main(Args   args)
+        #{
+        #    PRDataExportItemId_OK   export;
+        #    JournalForm             journalForm;
+        #    ;
+        #    export = PRDataExportItemId_OK::construct();
+        #
+        #    if(export.prompt())
+        #    {
+        #        export.run();
+        #    }
+        #
+        #}
+      ENDSOURCE
+    ENDMETHODS
+  ENDCLASS
+
+***Element: END
