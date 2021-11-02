@@ -1,0 +1,573 @@
+﻿Exportfile for AOT version 1.0 or later
+Formatversion: 1
+
+***Element: CLS
+
+; Microsoft Dynamics AX Class: KuchConsReport_OK выгружен
+; --------------------------------------------------------------------------------
+  CLSVERSION 1
+  
+  CLASS #KuchConsReport_OK
+    PROPERTIES
+      Name                #KuchConsReport_OK
+      Extends             #RunBaseBatch
+      RunOn               #Called from
+    ENDPROPERTIES
+    
+    METHODS
+      Version: 3
+      SOURCE #canGoBatch
+        #public boolean canGoBatch()
+        #{
+        #    return false;
+        #}
+      ENDSOURCE
+      SOURCE #caption
+        #public ClassDescription caption()
+        #{
+        #    ClassDescription ret;
+        #
+        #    ret = "Сводный отчет";
+        #
+        #    return ret;
+        #}
+      ENDSOURCE
+      SOURCE #classDeclaration
+        #class KuchConsReport_OK extends RunBaseBatch
+        #{
+        #    StartDate           startDate;
+        #    EndDate             endDate;
+        #    WrkCtrId            wrkCtrId;
+        #
+        #    DialogField         dlgStartDate,dlgEndDate,dlgwrkCtrId;
+        #
+        #    ComExcelDocument_RU document;
+        #    int                 curWorkSheetNum;
+        #    int                 countLine;
+        #
+        #    #define.TemplateName('Cводный отчет.xlsx')
+        #    #define.StartPosition(9)
+        #    #define.DateRange('DateRange')
+        #
+        #    #define.CurrentVersion(1)
+        #    #localmacro.CurrentList
+        #    startDate,
+        #    endDate,
+        #    wrkCtrId
+        #    #endmacro
+        #}
+      ENDSOURCE
+      SOURCE #dialog
+        #protected Object dialog(DialogRunbase dialog, boolean forceOnClient)
+        #{
+        #    DialogRunBase   ret;
+        #
+        #    ret = super(dialog, forceOnClient);
+        #
+        #    ret.addGroup('Период');
+        #    dlgStartDate = ret.addFieldValue(typeId(StartDate),startDate);
+        #    dlgEndDate   = ret.addFieldValue(typeId(EndDate),  endDate);
+        #
+        #    ret.addGroup('Параметры');
+        #
+        #    dlgwrkCtrId    = ret.addFieldValue(typeId(WrkCtrId),wrkCtrId);
+        #
+        #
+        #    return ret;
+        #}
+      ENDSOURCE
+      SOURCE #Fillp45
+        #Container Fillp45(ItemId    _itemId,
+        #                  Transdate _transDate,
+        #                  ConfigId  _configId)
+        #{
+        #    InventTrans         inventTrans;
+        #    InventDim           inventDim;
+        #    InventQty           receiptQty,IssueQty;
+        #    InventLocation      InventLocation;
+        #    KuchReportParm_OK   reportParm;
+        #    Query               query;
+        #    QueryRun            qr;
+        #    ;
+        #    reportParm = KuchReportParm_OK::find();
+        #
+        #    if(reportParm.KuchLocationProd)
+        #    {
+        #        query = new Query();
+        #        query.addDataSource(tablenum(InventLocation));
+        #        query.dataSourceNo(1).addRange(fieldnum(InventLocation,InventLocationId)).value(reportParm.KuchLocationProd);
+        #        qr = new QueryRun(query);
+        #        while (qr.next())
+        #        {
+        #            InventLocation = qr.getNo(1);
+        #            while select inventTrans
+        #                    where inventTrans.ItemId ==  _itemId
+        #                      && ((inventTrans.DatePhysical && inventTrans.DatePhysical == _transDate)
+        #                                ||
+        #                                (!inventTrans.DatePhysical && inventTrans.DateInvent == _transDate))
+        #
+        #            join inventDim
+        #                    where inventDim.inventDimId == inventTrans.inventDimId
+        #                       && inventDim.InventLocationId == InventLocation.InventLocationId
+        #                       && inventDim.configId == _configId
+        #            {
+        #                  switch(inventTrans.TransType)
+        #                  {
+        #                    case InventTransType::Production:
+        #                    receiptQty += inventTrans.Qty;
+        #                    break;
+        #                    case InventTransType::InventTransfer:
+        #                    if(inventTrans.Direction == InventDirection::Issue)
+        #                        IssueQty += (-inventTrans.Qty);
+        #                    break;
+        #                    default:
+        #                    break;
+        #                  }
+        #             }
+        #
+        #          }
+        #     }
+        #     return [receiptQty,IssueQty];
+        #}
+      ENDSOURCE
+      SOURCE #FillSales45
+        #InventQty FillSales45(ItemId    _itemId,
+        #                      Transdate _transDate,
+        #                      ConfigId  _configId)
+        #{
+        #    InventTrans         inventTrans;
+        #    InventDim           inventDim;
+        #    InventQty           salesQty;
+        #    InventLocation      InventLocation;
+        #    KuchReportParm_OK   reportParm;
+        #    Query               query;
+        #    QueryRun            qr;
+        #    ;
+        #    reportParm = KuchReportParm_OK::find();
+        #
+        #    if(reportParm.KuchLocationFP)
+        #    {
+        #        query = new Query();
+        #        query.addDataSource(tablenum(InventLocation));
+        #        query.dataSourceNo(1).addRange(fieldnum(InventLocation,InventLocationId)).value(reportParm.KuchLocationFP);
+        #        qr = new QueryRun(query);
+        #        while (qr.next())
+        #        {
+        #            InventLocation = qr.getNo(1);
+        #            while select inventTrans
+        #                    where inventTrans.ItemId ==  _itemId
+        #                      && ((inventTrans.DatePhysical && inventTrans.DatePhysical == _transDate)
+        #                                ||
+        #                                (!inventTrans.DatePhysical && inventTrans.DateInvent == _transDate))
+        #
+        #            join inventDim
+        #                    where inventDim.inventDimId == inventTrans.inventDimId
+        #                       && inventDim.InventLocationId == InventLocation.InventLocationId
+        #                       && inventDim.configId == _configId
+        #            {
+        #                  switch(inventTrans.TransType)
+        #                  {
+        #                    case InventTransType::Sales:
+        #                    salesQty += inventTrans.Qty;
+        #                    break;
+        #                    default:
+        #                    break;
+        #                  }
+        #             }
+        #
+        #          }
+        #     }
+        #     return -salesQty;
+        #}
+      ENDSOURCE
+      SOURCE #fillStartEndAndTrans
+        #Container fillStartEndAndTrans(ItemId    _itemId,
+        #                          ConfigId  _configId,
+        #                          StartDate _startDate)
+        #{
+        #    InventDim                   inventDim;
+        #    InventTable                 inventTable;
+        #    KuchReportParm_OK           reportParm;
+        #    InventLocation              InventLocation;
+        #    InventQty                   startProdQty,endProdQty,
+        #                                startFPQty,endFPQty;
+        #    Query                       query;
+        #    QueryRun                    qr;
+        #    ;
+        #
+        #    reportParm                  = KuchReportParm_OK::find();
+        #    startProdQty = 0;
+        #    endProdQty   = 0;
+        #    startFPQty   = 0;
+        #    endFPQty     = 0;
+        #
+        #    if(reportParm.KuchLocationProd)
+        #    {
+        #        query = new Query();
+        #        query.addDataSource(tablenum(InventLocation));
+        #        query.dataSourceNo(1).addRange(fieldnum(InventLocation,InventLocationId)).value(reportParm.KuchLocationProd);
+        #        qr = new QueryRun(query);
+        #        while (qr.next())
+        #        {
+        #            InventLocation = qr.getNo(1);
+        #            inventDim.clear();
+        #            InventDim.InventLocationId = InventLocation.InventLocationId;
+        #            InventDim.configId = _configId;
+        #            startProdQty += this.updateStartEnd(true,_itemId,inventDim,_startDate);
+        #            endProdQty   += this.updateStartEnd(false,_itemId,inventDim,_startDate);
+        #        }
+        #      }
+        #
+        #    if(reportParm.KuchLocationFP)
+        #    {
+        #        query = new Query();
+        #        query.addDataSource(tablenum(InventLocation));
+        #        query.dataSourceNo(1).addRange(fieldnum(InventLocation,InventLocationId)).value(reportParm.KuchLocationFP);
+        #        qr = new QueryRun(query);
+        #        while (qr.next())
+        #        {
+        #            InventLocation = qr.getNo(1);
+        #            inventDim.clear();
+        #            InventDim.InventLocationId = InventLocation.InventLocationId;
+        #            InventDim.configId = _configId;
+        #            startFPQty += this.updateStartEnd(true,_itemId,inventDim,_startDate);
+        #            endFPQty   += this.updateStartEnd(false,_itemId,inventDim,_startDate);
+        #        }
+        #      }
+        #return [startProdQty,endProdQty,startFPQty,endFPQty];
+        #}
+        #
+      ENDSOURCE
+      SOURCE #getFromDialog
+        #public boolean getFromDialog()
+        #{
+        #    boolean ret;
+        #    ;
+        #    ret = super();
+        #
+        #    startDate           = dlgStartDate.value();
+        #    endDate             = dlgEndDate.value();
+        #    wrkCtrId              = dlgwrkCtrId.value();
+        #
+        #    return ret;
+        #}
+      ENDSOURCE
+      SOURCE #makeDocument
+        #private boolean makeDocument()
+        #{
+        #    ;
+        #    document = new ComExcelDocument_RU();
+        #
+        #    if (!document.newFile(templateFolderPROD_OK() + #TemplateName, false))
+        #        return checkFailed(strfmt("@SYS60367",templateFolderPROD_OK() + #TemplateName));
+        #
+        #    return true;
+        #}
+      ENDSOURCE
+      SOURCE #numconv
+        #str numconv(real _s)
+        #{
+        #    return strfmt("%1",_s);
+        #}
+      ENDSOURCE
+      SOURCE #onHandQty
+        #InventQty  onHandQty(
+        #    TransDate       _transDate,
+        #    ItemId          _itemId,
+        #    InventDim       _inventDim,
+        #    InventDimParm   _inventDimParm
+        #    )
+        #{
+        #    InventSumDatePhysicalDim   inventSumDatePhysicalDim = InventSumDatePhysicalDim::newParameters(_transDate,_itemId,_inventDim,_inventDimParm);
+        #    ;
+        #
+        #    return inventSumDatePhysicalDim.postedQty()     +
+        #           inventSumDatePhysicalDim.receivedQty()   -
+        #           inventSumDatePhysicalDim.deductedQty();
+        #}
+      ENDSOURCE
+      SOURCE #pack
+        #public container pack()
+        #{
+        #    return [#CurrentVersion,#CurrentList];
+        #}
+      ENDSOURCE
+      SOURCE #printSheet1
+        #void printSheet1()
+        #{
+        #     #IsoCountryRegionCodes
+        #     ProdTable              prodtable,tempProdTable;
+        #     ProdJournalBOM         prodJournalBOM;
+        #     PRGatesProdData        gatesProdData;
+        #     KuchRemainsInProd_OK   remainsInProd,
+        #                            kRemainsInProd;
+        #     InventQty              receiptQty,IssueQty;
+        #     container              line;
+        #     str                    toClipboard;
+        #     str                    dateRange;
+        #     int                    ProdNum;
+        #     int                    LineNum;
+        #     int                    counter;
+        #     int                    j;
+        #
+        #     InventQty              startShiftOneRemains,
+        #                            startShiftTwoRemains,
+        #                            startShiftThreeRemains,
+        #                            endShiftOneRemains,
+        #                            endShiftTwoRemains,
+        #                            endShiftThreeRemains,
+        #                            startShiftProdRemains,
+        #                            endShiftProdRemains,
+        #                            startShiftFPRemains,
+        #                            endShiftFPRemains,
+        #                            SalesQty, prodOPQty;
+        #
+        #     ItemId                 itemId,bomItemdId;
+        #     WrkCtrId               kWrkCtrId;
+        #     ConfigId               configId;
+        #     TransDate              kTransdate;
+        #     InventQty              kCounter,kWaste,kOtherExpenses;
+        #     TextBuffer             textBuffer = new TextBuffer();
+        #     KeySum_OK              keySum = new keySum_OK(1, 1);
+        #     Map                    prodMap = new Map(Types::Container,Types::Record);
+        #     Map                    remainsMap = new Map (Types::Container,Types::Container);
+        #
+        #     System.Windows.Forms.InputLanguage tempLanguage = System.Windows.Forms.InputLanguage::get_CurrentInputLanguage();
+        #     System.Windows.Forms.InputLanguage ruLanguage  = System.Windows.Forms.InputLanguage::FromCulture(New System.Globalization.CultureInfo(#isoRu));
+        #     #define.CopyRaw(7)
+        #     #define.CopyRaw2(1)
+        #     #define.StartCol(1)
+        #     #define.AllCol(26)
+        #     #define.LinesInTemplate(1)
+        #
+        #     void exportLine(container con = connull(),Boolean ret = true)
+        #     {
+        #        int i, columnCount = conlen(con)+1;
+        #        ;
+        #        lineNum++;
+        #        j++;
+        #        for (i = 1; i != columnCount; i++)
+        #            toClipboard += any2str(conpeek(con,i)) + "\t";
+        #
+        #        toClipboard += "\n";
+        #     }
+        #     ;
+        #
+        #     while select prodtable
+        #     where prodTable.DlvDate        >= startDate
+        #     &&    prodTable.DlvDate        <= endDate
+        #     &&    (!wrkCtrId || prodTable.WrkCtrId_OK    == wrkCtrId)
+        #     join  prodJournalBOM
+        #     where prodtable.ProdId == prodJournalBOM.ProdId
+        #     join  gatesProdData
+        #     where prodJournalBOM.RecId == gatesProdData.ProdJournalBOMRefRecId
+        #     {
+        #        tempProdTable = prodtable::find(prodTable.CollectRefProdId);
+        #
+        #        keySum.updateNow([tempProdTable.ItemId,InventDim::find(tempProdTable.InventDimId).configId,tempProdTable.WrkCtrId_OK,tempProdTable.DlvDate,prodJournalBOM.ItemId],
+        #                            [(gatesProdData.EndCounter - gatesProdData.StartCounter),gatesProdData.Waste,gatesProdData.OtherExpenses]);
+        #
+        #        if(!prodMap.exists([tempProdTable.ItemId,InventDim::find(tempProdTable.InventDimId).configId,tempProdTable.WrkCtrId_OK,tempProdTable.DlvDate,prodTable.ProdShift_OK]))
+        #
+        #            prodMap.insert([tempProdTable.ItemId,InventDim::find(tempProdTable.InventDimId).configId,tempProdTable.WrkCtrId_OK,tempProdTable.DlvDate,tempProdTable.ProdShift_OK],
+        #                            KuchRemainsInProd_OK::find(tempProdTable.ItemId,InventDim::find(tempProdTable.InventDimId).configId,tempProdTable.WrkCtrId_OK,tempProdTable.ProdShift_OK,tempProdTable.DlvDate));
+        #        if(!remainsMap.exists([tempProdTable.ItemId,InventDim::find(tempProdTable.InventDimId).configId,tempProdTable.DlvDate]))
+        #        {
+        #            remainsMap.insert([tempProdTable.ItemId,InventDim::find(tempProdTable.InventDimId).configId,tempProdTable.DlvDate],
+        #                                                this.fillStartEndAndTrans(tempProdTable.ItemId,InventDim::find(tempProdTable.InventDimId).configId,tempProdTable.DlvDate));
+        #        }
+        #
+        #     }
+        #        for(counter = 1; counter <= keySum.numOfTrans(); counter++)
+        #        {
+        #            [ItemId,configId,kWrkCtrId,kTransdate,bomItemdId]   = keysum.index2Key(counter);
+        #            [kCounter,kWaste,kOtherExpenses]                    = keysum.index2Data(counter);
+        #
+        #            if (prodMap.exists([ItemId,configId,kWrkCtrId,kTransdate,ProdShift::First]))
+        #            {
+        #                kRemainsInProd = prodMap.lookup([ItemId,configId,kWrkCtrId,kTransdate,ProdShift::First]);
+        #                startShiftOneRemains = kRemainsInProd.StartShiftRemains;
+        #                endShiftOneRemains   = kRemainsInProd.EndShiftRemains;
+        #            }
+        #
+        #            if (prodMap.exists([ItemId,configId,kWrkCtrId,kTransdate,ProdShift::Second]))
+        #            {
+        #                kRemainsInProd = prodMap.lookup([ItemId,configId,kWrkCtrId,kTransdate,ProdShift::Second]);
+        #                startShiftTwoRemains = kRemainsInProd.StartShiftRemains;
+        #                endShiftTwoRemains   = kRemainsInProd.EndShiftRemains;
+        #            }
+        #
+        #            if (prodMap.exists([ItemId,configId,kWrkCtrId,kTransdate,ProdShift::Third]))
+        #            {
+        #                kRemainsInProd = prodMap.lookup([ItemId,configId,kWrkCtrId,kTransdate,ProdShift::Third]);
+        #                startShiftThreeRemains = kRemainsInProd.StartShiftRemains;
+        #                endShiftThreeRemains   = kRemainsInProd.EndShiftRemains;
+        #            }
+        #
+        #            if(remainsMap.exists([ItemId,configId,kTransdate]))
+        #
+        #            [startShiftProdRemains,endShiftProdRemains,startShiftFPRemains,endShiftFPRemains] = remainsMap.lookup([ItemId,configId,kTransdate]);
+        #
+        #            salesQty = this.FillSales45(ItemId,kTransdate,configId);
+        #
+        #            line = connull();
+        #            ProdNum++;
+        #            line += int2str(ProdNum);
+        #            //
+        #            line += date2str(kTransdate,123,2,2,2,2,2);
+        #            //
+        #
+        #            line += kWrkCtrId;
+        #            line += WrkCtrTable::find(kWrkCtrId).Name;
+        #            line += ItemId;
+        #            //
+        #            line += InventTable::find(ItemId).ItemName;
+        #            //
+        #
+        #            line += InventTable::find(bomItemdId).ItemName;
+        #            line += InventTxt::find(bomItemdId).Txt;
+        #            line += inventTable::find(ItemId).WeighingOut_OK;
+        #            if(unitConvert::canConvert(unitParameters::find().UnitIdSht,'ОП',ItemId))
+        #                line += this.numconv(unitConvert::qty(1,'ОП',unitParameters::find().UnitIdSht,ItemId));
+        #            else
+        #                line += '';
+        #            if(unitConvert::canConvert(unitParameters::find().unitIDPlaceQty,'ОП',ItemId))
+        #                line += this.numconv(unitConvert::qty(1,unitParameters::find().unitIDPlaceQty,'ОП', ItemId));
+        #            else
+        #                line += '';
+        #            line += this.numconv(inventTable::find(ItemId).NetWeight);
+        #            line += enum2str(ProdShift::First) + ':' + this.numconv(startShiftOneRemains) + ' ' + enum2str(ProdShift::Second) + ':' +  this.numconv(startShiftTwoRemains) + ' '
+        #                                          + enum2str(ProdShift::Third) + ':' + this.numconv(startShiftThreeRemains) ;
+        #            line += this.numconv(kCounter);
+        #            line += this.numconv(kWaste);
+        #            line += this.numconv(kOtherExpenses);
+        #            line += enum2str(ProdShift::First) + ':' +  this.numconv(endShiftOneRemains) + ' ' + enum2str(ProdShift::Second) + ':' + this.numconv(endShiftTwoRemains) + ' '
+        #                                         + enum2str(ProdShift::Third) + ':' +this.numconv(endShiftThreeRemains) ;
+        #            line +=  this.numconv((startShiftOneRemains + startShiftTwoRemains + startShiftThreeRemains) + kCounter - kWaste - kOtherExpenses
+        #                                                 - (endShiftOneRemains + endShiftTwoRemains + endShiftThreeRemains));
+        #             [receiptQty,IssueQty] = this.Fillp45(ItemId,kTransdate,configId);
+        #            if(unitConvert::canConvert(unitParameters::find().unitIDPlaceQty,'ОП',ItemId))
+        #            {
+        #                prodOPQty = receiptQty * (unitConvert::qty(1,unitParameters::find().unitIDPlaceQty,'ОП', ItemId));
+        #
+        #                line += this.numconv(prodOPQty);
+        #             }
+        #            else
+        #                Line += '';
+        #
+        #            line += this.numconv(prodOPQty - ((startShiftOneRemains + startShiftTwoRemains + startShiftThreeRemains) + kCounter - kWaste - kOtherExpenses
+        #                                                 - (endShiftOneRemains + endShiftTwoRemains + endShiftThreeRemains)));
+        #
+        #            line += this.numconv(startShiftProdRemains);
+        #            line += this.numconv(receiptQty);
+        #            line += this.numconv(IssueQty);
+        #            line += this.numconv(endShiftProdRemains);
+        #            line += this.numconv(startShiftFPRemains);
+        #            line += this.numconv(salesQty);
+        #            line += this.numconv(endShiftFPRemains);
+        #  //          line += this.numconv(salesQty + startShiftProdRemains - receiptQty - endShiftProdRemains + startShiftFPRemains - endShiftFPRemains);
+        #            line += this.numconv(salesQty - (startShiftProdRemains + receiptQty - endShiftProdRemains + startShiftFPRemains - endShiftFPRemains));
+        #
+        #            startShiftOneRemains = 0;
+        #            endShiftOneRemains = 0;
+        #            startShiftTwoRemains = 0;
+        #            endShiftTwoRemains = 0;
+        #            startShiftThreeRemains = 0;
+        #            endShiftThreeRemains = 0;
+        #            prodOPQty            = 0;
+        #        exportLine(line);
+        #
+        #     }
+        #
+        #     System.Windows.Forms.InputLanguage::set_CurrentInputLanguage(ruLanguage);
+        #     this.makeDocument();
+        #     document.insertRows(7,7,1,1,j-1,1);
+        #
+        #     textBuffer.setText(toClipboard);
+        #     textBuffer.toClipboard();
+        #
+        #
+        #     Document.N_Paste(7,1);
+        #     dateRange = date2str(startDate,123,2,2,2,2,2)+ '-' + date2str(endDate,123,2,2,2,2,2);
+        #     document.insertValue(#DateRange,dateRange);
+        #     Document.SetWrapText(strfmt("%1:%2",COMExcelDocument_RU::numToNameCell(#StartCol, #CopyRaw), COMExcelDocument_RU::numToNameCell(#AllCol,#CopyRaw +j - 1)),true);
+        #
+        #     System.Windows.Forms.InputLanguage::set_CurrentInputLanguage(tempLanguage);
+        #
+        #}
+      ENDSOURCE
+      SOURCE #run
+        #public void run()
+        #{
+        #    super();
+        #
+        #    this.printSheet1();
+        #
+        #    document.visible(true);
+        #    document.finalize();
+        #}
+      ENDSOURCE
+      SOURCE #unpack
+        #public boolean unpack(container _packedClass)
+        #{
+        #    Integer     version     = conPeek(_packedClass,1);
+        #
+        #    switch (version)
+        #    {
+        #        case #CurrentVersion:
+        #            [version, #CurrentList] = _packedClass;
+        #            break;
+        #        default :
+        #            return false;
+        #    }
+        #
+        #    return true;
+        #}
+      ENDSOURCE
+      SOURCE #updateStartEnd
+        #InventQty updateStartEnd(NoYes _start, ItemId _itemId, InventDim _inventDim, TransDate  _transDate)
+        #{
+        #    InventSumDatePhysicalDim   calc;
+        #    InventDimParm              inventDimParm;
+        #    Qty                        qty;
+        #    ;
+        #    inventDimParm.InventLocationIdFlag = true;
+        #    inventDimParm.ConfigIdFlag         = true;
+        #    inventDimParm.InventInChargeIdFlag = true;
+        #    inventDimParm.ItemIdFlag           = true;
+        #
+        #    qty = this.onHandQty(_start ? _transDate - 1 : _transDate, _itemId, _inventDim, inventDimParm);
+        #
+        #    return qty;
+        #}
+        #
+        #
+      ENDSOURCE
+      SOURCE #validate
+        #public boolean validate(Object calledFrom)
+        #{
+        #    boolean ret;
+        #
+        #    ret = super(calledFrom);
+        #    if (!startDate)
+        #        throw error("Не указана начальная дата");
+        #    if (!endDate)
+        #        throw error("Не указана конечная дата");
+        #    return ret;
+        #}
+      ENDSOURCE
+      SOURCE #main
+        #static void main(Args _args)
+        #{
+        #    KuchConsReport_OK   consReport = new KuchConsReport_OK();
+        #    ;
+        #
+        #    if (consReport.prompt())
+        #        consReport.run();
+        #
+        #}
+      ENDSOURCE
+    ENDMETHODS
+  ENDCLASS
+
+***Element: END
